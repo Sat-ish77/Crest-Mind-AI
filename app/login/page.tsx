@@ -1,56 +1,36 @@
+"use client";
+
 export default function LoginPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
-        background: "#efefef",
+        height: "100vh",
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
+        alignItems: "center",
+        background: "#f4f4f4"
       }}
     >
       <div
         style={{
-          width: "520px",
-          background: "#f8f8f8",
-          border: "2px solid #444",
-          padding: "48px",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+          background: "white",
+          padding: "40px",
+          borderRadius: "10px",
+          width: "350px",
+          boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
         }}
       >
-        <div
-          style={{
-            border: "2px dashed #aaa",
-            padding: "16px",
-            textAlign: "center",
-            marginBottom: "28px",
-            fontWeight: 700,
-          }}
-        >
-          [Woodcrest Logo]
-        </div>
-
-        <h1
-          style={{
-            textAlign: "center",
-            fontSize: "38px",
-            fontWeight: 700,
-            marginBottom: "36px",
-          }}
-        >
+        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
           CrestMind AI Portal
-        </h1>
+        </h2>
 
         <input
           type="email"
           placeholder="Employee Email"
           style={{
             width: "100%",
-            padding: "16px",
-            marginBottom: "18px",
-            border: "2px solid #ccc",
-            fontSize: "18px",
+            padding: "10px",
+            marginBottom: "15px"
           }}
         />
 
@@ -59,48 +39,22 @@ export default function LoginPage() {
           placeholder="Password"
           style={{
             width: "100%",
-            padding: "16px",
-            marginBottom: "18px",
-            border: "2px solid #ccc",
-            fontSize: "18px",
+            padding: "10px",
+            marginBottom: "20px"
           }}
         />
 
         <button
           style={{
             width: "100%",
-            padding: "16px",
-            border: "2px solid #333",
-            background: "#f1f1f1",
-            fontSize: "20px",
-            fontWeight: 700,
-            marginBottom: "16px",
-            cursor: "pointer",
+            padding: "12px",
+            background: "#0a2540",
+            color: "white",
+            border: "none",
+            cursor: "pointer"
           }}
         >
           Secure Log In
-        </button>
-
-        <div style={{ marginBottom: "32px" }}>
-          <a href="#" style={{ color: "#456", fontSize: "16px" }}>
-            Forgot Password?
-          </a>
-        </div>
-
-        <hr style={{ marginBottom: "32px" }} />
-
-        <button
-          style={{
-            width: "100%",
-            padding: "16px",
-            border: "2px dashed #aaa",
-            background: "white",
-            fontSize: "18px",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Log in with Corporate SSO
         </button>
       </div>
     </div>
