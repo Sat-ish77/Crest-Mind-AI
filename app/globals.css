@@ -1,13 +1,16 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --gold: #c9a96e; --gold-light: #e8c98a; --bg: #0c0e14;
-  --bg-surface: rgba(255,255,255,0.03); --bg-hover: rgba(255,255,255,0.06);
-  --border: rgba(255,255,255,0.08); --text-primary: #f0ead6;
-  --text-body: rgba(255,255,255,0.78); --text-muted: rgba(255,255,255,0.38);
-  --text-dim: rgba(255,255,255,0.2); --green: #6ee7b7;
-  --blue: #93c5fd; --red: #fca5a5; --yellow: #fcd34d;
+* {
+  box-sizing: border-box;
 }
-body { font-family: "DM Sans",sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; }
-@keyframes fadeSlideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.35} 50%{transform:scale(1.5);opacity:1} }
-.fade-in { animation: fadeSlideUp 0.35s ease forwards; }
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: #efefef;
+  color: #222;
+}
+
+a {
+  color: inherit;
+}
