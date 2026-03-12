@@ -22,9 +22,9 @@ And get an instant answer with the exact source document cited.
 
 ## 🏗️ How It Works
 ```
-PDF/DOCX Documents
+PDF/DOCX/Images
       ↓
-OCR + Text Extraction
+OCR + text extraction (local Tesseract for now)
       ↓
 Split into 500-char chunks
       ↓
@@ -59,6 +59,7 @@ Answer + Source Citation
 
 | Layer | Technology |
 |---|---|
+| OCR / Text Extraction | Tesseract (pytesseract) on‑prem; Google Vision/Vertex AI later |
 | LLM | Llama 3.3 70B (Groq for dev, GCP Vertex AI for prod) |
 | Embeddings | OpenAI text-embedding-3-small |
 | Vector Database | Supabase + pgvector |
@@ -93,7 +94,13 @@ crestmind-ai/
 ---
 
 ## 🔐 Environment Variables
-```
+
+Additional tools used in the OCR pipeline may require external binaries:
+
+```bash
+# install tesseract-ocr on macOS
+brew install tesseract
+``````
 OPENAI_API_KEY=        ← for embeddings
 GROQ_API_KEY=          ← for LLM calls (dev)
 SUPABASE_URL=          ← your Supabase project URL
@@ -102,6 +109,23 @@ GCP_PROJECT_ID=        ← for Vertex AI (prod)
 ```
 
 ---
+
+## 📝 OCR Usage
+
+Saurav’s module lives under `ingest/`; to run OCR locally:
+
+```python
+from ingest.loader import loader
+text = loader("data/samples/your_file.pdf")
+print(text[:400])
+```
+
+The loader uses Tesseract internally (no external cost) and handles PDF
+and common image types.  Later you can swap the implementation for a
+cloud service (Google Vision / Vertex AI) without changing callers.
+
+Once you have raw text you can continue with `ingest.chunker.chunk_text`
+and `ingest.embedder.embed_chunks` to push data into the vector store.
 
 ## 🌿 Branch Structure
 
