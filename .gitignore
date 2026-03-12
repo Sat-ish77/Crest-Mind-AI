@@ -1,9 +1,5 @@
-Crest-Mind-AI
-   .gitignore   ← correct
-   app
-   data
-   db
-   ingest
-   node_modules
-   public
-   
+node_modules/
+.next/
+.env
+.env.local
+.DS_Store
