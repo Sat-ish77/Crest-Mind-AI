@@ -31,7 +31,7 @@ Never use your training knowledge to answer.
 2. Read ALL provided chunks carefully and extract the answer even if \
 it is spread across multiple chunks or mentioned indirectly. \
 Legal documents use formal language so read thoroughly.
-3. ONLY say "This information is not available in the provided documents." \
+3. ONLY say "I could not find this specific information in the provided chunks." \
 if after reading ALL chunks the answer truly cannot be found anywhere.
 4. NEVER invent numbers, dollar amounts, dates, or names not present in the chunks.
 5. Always cite your source at end of every answer: \
@@ -165,8 +165,6 @@ def generate_answer(query: str, retrieval_result: dict) -> dict:
 
     try:
         answer_text = _call_llm(user_message)
-        if "not available in the provided documents" in answer_text.lower():
-            return _OUT_OF_SCOPE_RESPONSE
     except Exception as exc:
         return {
             "answer": f"Error generating answer: {exc}",

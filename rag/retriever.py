@@ -20,7 +20,11 @@ load_dotenv()
 
 # ── Configuration ────────────────────────────────────────────
 EMBEDDING_MODEL = "text-embedding-3-small"  # must match ingest model
-SIMILARITY_THRESHOLD = 0.40  # below this = out of scope
+
+# text-embedding-3-small returns cosine similarities in the 0.3–0.6
+# range for property documents.  0.30 catches truly unrelated queries
+# while letting relevant-but-imperfect matches through to the LLM.
+SIMILARITY_THRESHOLD = 0.30
 
 _openai_client: OpenAI | None = None
 
@@ -51,9 +55,9 @@ def _embed_query(query: str) -> list[float]:
 
 def _confidence_level(similarity: float) -> str:
     """Map a similarity score to a human-readable confidence level."""
-    if similarity >= 0.85:
+    if similarity >= 0.55:
         return "high"
-    if similarity >= SIMILARITY_THRESHOLD:
+    if similarity >= 0.40:
         return "medium"
     return "low"
 
