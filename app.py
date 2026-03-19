@@ -1082,12 +1082,20 @@ def _render_ask():
 
         # ── Sources ───────────────────────────────────
         if result.get("sources"):
+          # Deduplicate sources by doc_name + section
+          seen = set()
+            unique_sources = []
+            for src in result["sources"]:
+                key = (src.get("doc_name"), src.get("section"))
+                if key not in seen:
+                    seen.add(key)
+                    unique_sources.append(src)
             st.markdown(
                 '<div class="cm-section-label" style="margin-top:1.5rem;">'
                 "Source Documents</div>",
                 unsafe_allow_html=True,
             )
-            for src in result["sources"]:
+            for src in unique_sources:
                 conf = src.get("confidence", "?")
                 conf_color = {
                     "high": "#4ade80", "medium": "#c9a84c", "low": "#f87171"
