@@ -104,7 +104,7 @@ def retrieve(
     rpc_params = {
         "query_embedding": query_embedding,
         "query_text": query,
-        "match_count": top_k,
+        "match_count": top_k * 3,
         "filter_doc_type": filter_doc_type,
         "filter_doc_name": filter_doc_name,
     }
