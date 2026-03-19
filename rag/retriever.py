@@ -21,10 +21,10 @@ load_dotenv()
 # ── Configuration ────────────────────────────────────────────
 EMBEDDING_MODEL = "text-embedding-3-small"  # must match ingest model
 
-# text-embedding-3-small returns cosine similarities in the 0.3–0.6
-# range for property documents.  0.30 catches truly unrelated queries
-# while letting relevant-but-imperfect matches through to the LLM.
-SIMILARITY_THRESHOLD = 0.30
+# RRF scores range from ~0.012 to ~0.033 (max = 1/61 + 1/61).
+# 0.01 catches any chunk that ranked in either vector or keyword search.
+# Quality is controlled by ranking, not by this threshold.
+SIMILARITY_THRESHOLD = 0.01
 
 _openai_client: OpenAI | None = None
 
@@ -54,10 +54,10 @@ def _embed_query(query: str) -> list[float]:
 
 
 def _confidence_level(similarity: float) -> str:
-    """Map a similarity score to a human-readable confidence level."""
-    if similarity >= 0.55:
+    """Map an RRF score to a human-readable confidence level."""
+    if similarity >= 0.025:
         return "high"
-    if similarity >= 0.40:
+    if similarity >= 0.015:
         return "medium"
     return "low"
 
@@ -103,6 +103,7 @@ def retrieve(
 
     rpc_params = {
         "query_embedding": query_embedding,
+        "query_text": query,
         "match_count": top_k,
         "filter_doc_type": filter_doc_type,
         "filter_doc_name": filter_doc_name,
@@ -111,6 +112,7 @@ def retrieve(
     try:
         result = supabase.rpc("match_documents", rpc_params).execute()
     except Exception as exc:
+        print(f"RPC ERROR: {exc}")
         return {
             "chunks": [],
             "out_of_scope": True,
@@ -119,14 +121,12 @@ def retrieve(
 
     rows = result.data or []
 
-    # Attach confidence level to each chunk
     chunks = []
     for row in rows:
         sim = row.get("similarity", 0)
         row["confidence"] = _confidence_level(sim)
         chunks.append(row)
 
-    # Out-of-scope detection: if every chunk is below threshold
     if not chunks or all(
         c.get("similarity", 0) < SIMILARITY_THRESHOLD for c in chunks
     ):

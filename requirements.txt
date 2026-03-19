@@ -4,5 +4,4 @@ python-dotenv
 openai
 PyMuPDF
 python-docx
-langchain-text-splitters
 websockets>=13.0,<16

@@ -1,33 +1,30 @@
 """
-CrestMind AI — Document Chunker
+CrestMind AI — Semantic Document Chunker
 
-Splits a loaded document into overlapping text chunks and
-attaches metadata (section labels, page numbers, property name).
+Splits documents into chunks that respect section boundaries,
+paragraph structure, and sentence integrity. Pure Python — no
+external NLP dependencies.
 
 ON-PREMISE SWAP:
-  To change the chunking strategy, only edit CHUNK_SIZE and
-  CHUNK_OVERLAP below, or swap RecursiveCharacterTextSplitter
-  for any splitter with the same .split_text(str) interface.
+  Adjust CHUNK_TARGET and CHUNK_MAX below to tune chunk size.
+  The chunking logic is self-contained — no external libraries.
 """
 
 import re
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # ── Chunking parameters ─────────────────────────────────────
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
+CHUNK_TARGET = 1000   # aim to group paragraphs up to this length
+CHUNK_MAX = 1200      # if a single paragraph exceeds this, split at sentences
+SENTENCE_OVERLAP = 150  # overlap when splitting oversized paragraphs
 
-_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=CHUNK_SIZE,
-    chunk_overlap=CHUNK_OVERLAP,
-    length_function=len,
-    separators=["\n\n", "\n", ". ", " ", ""],
-)
+# ── Section detection ────────────────────────────────────────
+# Numbered sections: "1.", "2.", "15." etc at start of line
+_NUMBERED_SECTION = re.compile(r"^(\d{1,3})\.\s+(.+)", re.MULTILINE)
 
-# ── Section-detection keywords ───────────────────────────────
-# When one of these appears at the start of a line (case-insensitive),
-# it becomes the current section label for all following chunks.
+# ALL CAPS headings: 2+ consecutive uppercase words (min 6 chars total)
+_CAPS_HEADING = re.compile(r"^([A-Z][A-Z\s\-&/,]{5,})$", re.MULTILINE)
 
+# Keyword-based section labels for property documents
 _SECTION_KEYWORDS: list[str] = [
     "HVAC",
     "Rent",
@@ -48,48 +45,119 @@ _SECTION_KEYWORDS: list[str] = [
     "Inspection",
     "Insulation",
     "Work Order",
+    "Tenant Improvements",
+    "Default",
+    "Termination",
+    "Indemnification",
+    "Subordination",
+    "Estoppel",
+    "Condemnation",
+    "Guaranty",
+    "Notices",
+    "Parking",
+    "Utilities",
+    "Signs",
+    "Hazardous Materials",
+    "Compliance",
 ]
 
-_section_pattern = re.compile(
+_keyword_pattern = re.compile(
     r"(?i)^(" + "|".join(re.escape(kw) for kw in _SECTION_KEYWORDS) + r")\b",
     re.MULTILINE,
 )
 
-# ── Property-name extraction ────────────────────────────────
-# Looks for patterns like "Property: Woodcrest Plaza" or
-# "Shopping Center: ..." near the top of the document.
+# Sentence boundary: period followed by space and uppercase letter,
+# but skip common abbreviations
+_SENTENCE_SPLIT = re.compile(
+    r"(?<!\bDr)(?<!\bMr)(?<!\bMs)(?<!\bNo)(?<!\bSt)(?<!\bVs)"
+    r"(?<!\bArt)(?<!\bSec)(?<!\bInc)(?<!\bLtd)(?<!\bCorp)"
+    r"\.\s+(?=[A-Z])"
+)
 
+# ── Property-name extraction ────────────────────────────────
 _property_pattern = re.compile(
     r"(?i)(?:property|shopping center|center name|project)[:\s]+([A-Z][\w\s\-&']{3,50})",
 )
 
 
-def _detect_section(text: str) -> str | None:
-    """Return the first section keyword found in `text`, or None."""
-    match = _section_pattern.search(text)
-    return match.group(1).title() if match else None
-
-
 def _extract_property_name(full_text: str) -> str | None:
-    """Try to pull a property name from the full document text."""
+    """Try to pull a property name from the first 2000 chars."""
     match = _property_pattern.search(full_text[:2000])
-    if match:
-        return match.group(1).strip()
-    return None
+    return match.group(1).strip() if match else None
 
 
 def _page_for_position(pages: list[dict], position: int) -> int:
     """Given a character offset in the full text, return the page number."""
     running = 0
     for page in pages:
-        running += len(page["text"]) + 1  # +1 for the \n join
+        running += len(page["text"]) + 1
         if position < running:
             return page["page_number"]
     return pages[-1]["page_number"] if pages else 1
 
 
+def _detect_section_label(text: str) -> str | None:
+    """Extract a section label from a paragraph if it starts one.
+
+    Checks numbered sections ("1. LEASE TERM"), ALL-CAPS headings
+    ("MAINTENANCE AND REPAIRS"), and keyword matches.
+    """
+    text_stripped = text.strip()
+    if not text_stripped:
+        return None
+
+    # Numbered section: "15. ASSIGNMENT AND SUBLETTING"
+    m = _NUMBERED_SECTION.match(text_stripped)
+    if m:
+        return m.group(2).strip().title()
+
+    # ALL CAPS heading
+    m = _CAPS_HEADING.match(text_stripped)
+    if m:
+        return m.group(1).strip().title()
+
+    # Keyword at start of line
+    m = _keyword_pattern.match(text_stripped)
+    if m:
+        return m.group(1).title()
+
+    return None
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split text into sentences, keeping the period with each sentence."""
+    parts = _SENTENCE_SPLIT.split(text)
+    return [s.strip() for s in parts if s.strip()]
+
+
+def _split_oversized(paragraph: str) -> list[str]:
+    """Split a paragraph that exceeds CHUNK_MAX at sentence boundaries
+    with SENTENCE_OVERLAP characters of overlap."""
+    sentences = _split_sentences(paragraph)
+    if len(sentences) <= 1:
+        return [paragraph]
+
+    chunks: list[str] = []
+    current = ""
+
+    for sent in sentences:
+        candidate = (current + " " + sent).strip() if current else sent
+        if len(candidate) > CHUNK_MAX and current:
+            chunks.append(current)
+            # Overlap: start the next chunk with the tail of the current
+            overlap_text = current[-SENTENCE_OVERLAP:] if len(current) > SENTENCE_OVERLAP else current
+            current = (overlap_text + " " + sent).strip()
+        else:
+            current = candidate
+
+    if current:
+        chunks.append(current)
+
+    return chunks
+
+
 def chunk_document(doc: dict) -> list[dict]:
-    """Split a loaded document into metadata-enriched chunks.
+    """Split a loaded document into semantically-aware chunks.
 
     Parameters
     ----------
@@ -115,43 +183,75 @@ def chunk_document(doc: dict) -> list[dict]:
 
     property_name = _extract_property_name(full_text)
 
-    raw_chunks = _splitter.split_text(full_text)
+    # Step 1: Split on double newlines to get natural paragraphs
+    paragraphs = [p.strip() for p in full_text.split("\n\n") if p.strip()]
 
-    # Build a section map: walk through the full text and track
-    # which section label is "active" at each character offset.
+    # Step 2 & 3: Walk paragraphs, detect sections, group into chunks
+    raw_chunks: list[tuple[str, str | None, int]] = []  # (text, section, char_offset)
     current_section: str | None = None
-    section_at_offset: list[tuple[int, str | None]] = [(0, None)]
+    current_buffer = ""
+    current_offset = 0
+    buffer_start_offset = 0
 
-    for m in _section_pattern.finditer(full_text):
-        current_section = m.group(1).title()
-        section_at_offset.append((m.start(), current_section))
+    char_pos = 0
 
-    def _section_for_position(pos: int) -> str | None:
-        """Return the active section at a character offset."""
-        active = None
-        for offset, sec in section_at_offset:
-            if offset <= pos:
-                active = sec
-            else:
-                break
-        return active
+    for para_idx, para in enumerate(paragraphs):
+        # Track character position in the original text
+        para_pos = full_text.find(para, char_pos)
+        if para_pos == -1:
+            para_pos = char_pos
+        char_pos = para_pos + len(para)
 
+        # Check if this paragraph starts a new section
+        label = _detect_section_label(para)
+        if label:
+            # Flush the current buffer as a chunk before starting new section
+            if current_buffer.strip():
+                raw_chunks.append((current_buffer.strip(), current_section, buffer_start_offset))
+            current_section = label
+            current_buffer = para
+            buffer_start_offset = para_pos
+            continue
+
+        # Would adding this paragraph exceed the target?
+        candidate = (current_buffer + "\n\n" + para).strip() if current_buffer else para
+
+        if len(candidate) > CHUNK_TARGET and current_buffer:
+            # Flush the buffer
+            raw_chunks.append((current_buffer.strip(), current_section, buffer_start_offset))
+            current_buffer = para
+            buffer_start_offset = para_pos
+        else:
+            if not current_buffer:
+                buffer_start_offset = para_pos
+            current_buffer = candidate
+
+    # Don't forget the last buffer
+    if current_buffer.strip():
+        raw_chunks.append((current_buffer.strip(), current_section, buffer_start_offset))
+
+    # Step 4: Split any oversized chunks at sentence boundaries
+    final_chunks: list[tuple[str, str | None, int]] = []
+    for text, section, offset in raw_chunks:
+        if len(text) > CHUNK_MAX:
+            sub_parts = _split_oversized(text)
+            for sub in sub_parts:
+                sub_offset = full_text.find(sub[:80], max(0, offset - 50))
+                if sub_offset == -1:
+                    sub_offset = offset
+                final_chunks.append((sub, section, sub_offset))
+        else:
+            final_chunks.append((text, section, offset))
+
+    # Build output dicts
+    total = len(final_chunks)
     chunks: list[dict] = []
-    search_start = 0
 
-    for i, chunk_text in enumerate(raw_chunks):
-        pos = full_text.find(chunk_text, search_start)
-        if pos == -1:
-            pos = search_start
-
-        section = _section_for_position(pos)
-        if section is None:
-            section = _detect_section(chunk_text)
-
-        page_number = _page_for_position(pages, pos)
+    for i, (text, section, offset) in enumerate(final_chunks):
+        page_number = _page_for_position(pages, offset)
 
         chunks.append({
-            "content": chunk_text,
+            "content": text,
             "doc_name": doc_name,
             "doc_type": doc_type,
             "section": section,
@@ -159,10 +259,8 @@ def chunk_document(doc: dict) -> list[dict]:
             "property_name": property_name,
             "metadata": {
                 "chunk_index": i,
-                "total_chunks": len(raw_chunks),
+                "total_chunks": total,
             },
         })
-
-        search_start = pos + 1
 
     return chunks
