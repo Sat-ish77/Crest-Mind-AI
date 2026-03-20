@@ -11,13 +11,3 @@ COPY . .
 EXPOSE 8080
 
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
-```
-
-And create `.dockerignore`:
-```
-.env
-__pycache__
-*.pyc
-data/
-.git
-app.pyy
