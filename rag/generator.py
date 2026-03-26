@@ -5,21 +5,27 @@ Calls the LLM with retrieved context to produce a grounded,
 cited answer.  Skips the LLM entirely for out-of-scope queries.
 
 ON-PREMISE SWAP:
-  Replace the OpenAI chat completion call in _call_llm() with
-  a call to your local Llama 3.3 70B endpoint (e.g. vLLM or
-  Ollama).  The system prompt and response parsing stay the same.
+  Replace the Vertex AI call in _call_llm() with a call to
+  your local Llama 3.3 70B endpoint (Ollama or vLLM).
+  The system prompt and response parsing stay the same.
 """
 
 import os
+import google.auth
+import google.auth.transport.requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # ── Configuration ────────────────────────────────────────────
-LLM_MODEL = "gpt-4o-mini"  # swap to local model name for on-premise
+LLM_MODEL = "meta/llama-3.3-70b-instruct-maas"
+GCP_REGION = "us-central1"
 
-_openai_client: OpenAI | None = None
+# Singleton client + credentials
+_vertex_client: OpenAI | None = None
+_credentials = None
+_project: str | None = None
 
 SYSTEM_PROMPT = """\
 You are CrestMind AI, a property document intelligence \
@@ -39,13 +45,18 @@ if after reading ALL chunks the answer truly cannot be found anywhere.
 6. If multiple documents are relevant → cite ALL of them.
 7. If confidence is low → add this warning: \
 "⚠️ Low confidence: Please verify this manually."
+8. If the document contains placeholder values like "Zero (0)", \
+blank fields, or template text like "Name of Shopping Center" or \
+"City, State" → note: \
+"⚠️ Note: This document appears to be a template with placeholder values. \
+Please verify with the actual signed document."
 
 FORMATTING RULES:
-8. If the question asks about costs, amounts, dates, \
+9. If the question asks about costs, amounts, dates, \
 comparisons, responsibilities, or lists of any kind \
 → ALWAYS respond in markdown table format with proper headers.
-9. Always include units: $ for costs, sqft for area, % for rates.
-10. For single simple facts → plain sentence is fine.
+10. Always include units: $ for costs, sqft for area, % for rates.
+11. For single simple facts → plain sentence is fine.
 
 WOODCREST CAPITAL REAL ESTATE TERMINOLOGY:
 Use these exact definitions — never use generic definitions:
@@ -80,18 +91,30 @@ _OUT_OF_SCOPE_RESPONSE = {
 }
 
 
-def _get_openai() -> OpenAI:
-    """Return a singleton OpenAI client."""
-    global _openai_client
-    if _openai_client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "OPENAI_API_KEY is missing. "
-                "Add it to your .env file (see .env.example)."
-            )
-        _openai_client = OpenAI(api_key=api_key)
-    return _openai_client
+def _get_vertex_client() -> OpenAI:
+    """Return a Vertex AI OpenAI-compatible client with refreshed credentials."""
+    global _vertex_client, _credentials, _project
+
+    # Get credentials on first call
+    if _credentials is None:
+        _credentials, _project = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+
+    # Refresh token if expired or not yet fetched
+    if not _credentials.valid:
+        _credentials.refresh(google.auth.transport.requests.Request())
+
+    # Always create fresh client with current token
+    _vertex_client = OpenAI(
+        base_url=(
+            f"https://{GCP_REGION}-aiplatform.googleapis.com/v1beta1"
+            f"/projects/{_project}/locations/{GCP_REGION}/endpoints/openapi"
+        ),
+        api_key=_credentials.token,
+    )
+
+    return _vertex_client
 
 
 def _build_context(chunks: list[dict]) -> str:
@@ -118,15 +141,15 @@ def _overall_confidence(chunks: list[dict]) -> str:
 
 
 def _call_llm(user_message: str) -> str:
-    """Send a message to the LLM and return the response text."""
-    client = _get_openai()
+    """Send a message to Llama 3.3 via Vertex AI and return the response text."""
+    client = _get_vertex_client()
     response = client.chat.completions.create(
         model=LLM_MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ],
-        temperature=0.1,
+        temperature=0.0,
         max_tokens=2048,
     )
     return response.choices[0].message.content
