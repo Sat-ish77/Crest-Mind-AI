@@ -1,7 +1,7 @@
 """
 CrestMind AI — Document Loader
 
-Reads PDF and DOCX files and returns structured text with
+Reads PDF, DOCX, and legacy DOC files and returns structured text with
 page-level granularity and auto-detected document type.
 
 ON-PREMISE SWAP:
@@ -12,6 +12,9 @@ ON-PREMISE SWAP:
 """
 
 import os
+import shutil
+import subprocess
+import tempfile
 import fitz  # PyMuPDF
 from docx import Document
 
@@ -103,10 +106,68 @@ def _load_docx(filepath: str) -> dict:
     }
 
 
+# ── DOC loader (legacy Word via LibreOffice) ─────────────────
+
+def _convert_doc_to_docx(doc_filepath: str) -> str:
+    """Convert a legacy .doc file to .docx using LibreOffice.
+
+    Returns the path to the converted .docx file.
+    Caller is responsible for cleaning up the temp directory.
+    """
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        subprocess.run(
+            [
+                "libreoffice",
+                "--headless",
+                "--convert-to", "docx",
+                "--outdir", tmp_dir,
+                doc_filepath,
+            ],
+            check=True,
+            capture_output=True,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise RuntimeError("LibreOffice conversion timed out after 60 seconds.")
+    except subprocess.CalledProcessError as exc:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise RuntimeError(
+            f"LibreOffice conversion failed: {exc.stderr.decode('utf-8', errors='ignore')}"
+        )
+
+    # LibreOffice names the output file the same as input but with .docx
+    original_name  = os.path.basename(doc_filepath)
+    converted_name = os.path.splitext(original_name)[0] + ".docx"
+    converted_path = os.path.join(tmp_dir, converted_name)
+
+    if not os.path.isfile(converted_path):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise RuntimeError(
+            f"LibreOffice conversion produced no output. "
+            f"Expected: {converted_path}"
+        )
+
+    return converted_path
+
+
+def _load_doc(filepath: str) -> dict:
+    """Convert .doc → .docx via LibreOffice then load as DOCX."""
+    tmp_dir = None
+    try:
+        converted_path = _convert_doc_to_docx(filepath)
+        tmp_dir = os.path.dirname(converted_path)
+        return _load_docx(converted_path)
+    finally:
+        if tmp_dir and os.path.isdir(tmp_dir):
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
 # ── Public API ───────────────────────────────────────────────
 
 def load_document(filepath: str) -> dict:
-    """Load a PDF or DOCX file and return structured text.
+    """Load a PDF, DOCX, or legacy DOC file and return structured text.
 
     Parameters
     ----------
@@ -131,7 +192,7 @@ def load_document(filepath: str) -> dict:
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f"File not found: {filepath}")
 
-    ext = os.path.splitext(filepath)[1].lower()
+    ext      = os.path.splitext(filepath)[1].lower()
     doc_name = os.path.basename(filepath)
 
     if ext == ".pdf":
@@ -150,10 +211,18 @@ def load_document(filepath: str) -> dict:
                 f"Failed to read DOCX '{doc_name}': {exc}"
             ) from exc
 
+    elif ext == ".doc":
+        try:
+            result = _load_doc(filepath)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to read DOC '{doc_name}': {exc}"
+            ) from exc
+
     else:
         raise ValueError(
             f"Unsupported file type '{ext}'. "
-            "Only .pdf and .docx files are supported."
+            "Only .pdf, .docx, and .doc files are supported."
         )
 
     result["doc_name"] = doc_name

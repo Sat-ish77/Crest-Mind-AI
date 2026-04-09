@@ -2,7 +2,7 @@
 CrestMind AI — FastAPI Backend
 Group 13 | UNT Capstone Spring 2026 | Built for Woodcrest Capital
 
-Exposes 4 endpoints that wrap the existing RAG pipeline.
+Exposes 5 endpoints that wrap the RAG pipeline.
 Smarika's React frontend calls these endpoints directly.
 
 ON-PREMISE SWAP:
@@ -24,6 +24,7 @@ from ingest.chunker import chunk_document
 from ingest.embedder import embed_and_store
 from rag.retriever import retrieve
 from rag.generator import generate_answer
+from rag.agent import run_agent
 
 load_dotenv()
 
@@ -61,6 +62,7 @@ class AskResponse(BaseModel):
     found_in_documents: bool
     overall_confidence: str
     sources: list
+    steps: list = []   # agent reasoning trace shown in UI
 
 class DocumentInfo(BaseModel):
     doc_name: str
@@ -83,6 +85,13 @@ def ask(request: AskRequest):
     """
     Ask a question about ingested property documents.
 
+    Uses the agentic RAG pipeline (LangGraph) which:
+    - Identifies which property the user is asking about
+    - Checks property status (active / sold / historical)
+    - Routes to the correct document category
+    - Re-searches if first retrieval is insufficient
+    - Handles cross-property queries
+
     Request body:
         query           — natural language question
         filter_doc_type — optional: "lease", "invoice", "amendment" etc
@@ -90,23 +99,25 @@ def ask(request: AskRequest):
         top_k           — optional: number of chunks to retrieve (default 5)
 
     Returns:
-        answer              — GPT-generated answer with citations
+        answer              — Llama-generated answer with citations
         found_in_documents  — True if answer found, False if out of scope
         overall_confidence  — "high", "medium", "low", or "none"
         sources             — list of source chunks used
+        steps               — agent reasoning trace for UI
     """
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
-    retrieval = retrieve(
-        query=request.query,
-        top_k=request.top_k or 5,
-        filter_doc_type=request.filter_doc_type,
-        filter_doc_name=request.filter_doc_name,
-    )
-
-    result = generate_answer(request.query, retrieval)
-    return result
+    try:
+        result = run_agent(
+            query=request.query,
+            filter_doc_type=request.filter_doc_type,
+            filter_doc_name=request.filter_doc_name,
+            top_k=request.top_k or 5,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/ingest")
@@ -116,10 +127,10 @@ def ingest(
     doc_type: str = Form(default="Auto-detect"),
 ):
     """
-    Upload and ingest a PDF or DOCX document.
+    Upload and ingest a PDF, DOCX, or legacy DOC document.
 
     Form fields:
-        file          — PDF or DOCX file
+        file          — PDF, DOCX, or DOC file
         property_name — optional property name override
         doc_type      — optional type override (lease, invoice etc)
 
@@ -128,15 +139,15 @@ def ingest(
         chunks_stored — number of chunks stored in Supabase
         doc_type      — detected or overridden document type
     """
-    # Validate file type
+    # Validate file type — now includes .doc
     ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in [".pdf", ".docx"]:
+    if ext not in [".pdf", ".docx", ".doc"]:
         raise HTTPException(
             status_code=400,
-            detail="Only PDF and DOCX files are supported"
+            detail="Only PDF, DOCX, and DOC files are supported"
         )
 
-    # Save to temp file
+    # Save to temp file preserving original extension
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
             tmp.write(file.file.read())
@@ -145,7 +156,7 @@ def ingest(
         raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
 
     try:
-        # Load
+        # Load — loader.py handles .doc → .docx conversion automatically
         doc = load_document(tmp_path)
         doc["doc_name"] = file.filename
 
@@ -266,4 +277,4 @@ def get_chunks(doc_name: str, section: Optional[str] = None):
         return {"doc_name": doc_name, "chunks": chunks}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))

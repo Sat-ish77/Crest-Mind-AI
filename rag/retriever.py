@@ -67,6 +67,7 @@ def retrieve(
     top_k: int = 5,
     filter_doc_type: str | None = None,
     filter_doc_name: str | None = None,
+    property_id: str | None = None,
 ) -> dict:
     """Search documents for chunks relevant to the user's query.
 
@@ -82,6 +83,10 @@ def retrieve(
     filter_doc_name : str | None
         If set, restrict results to this specific document
         by filename (e.g. "Ollies - Lease, 2010.docx").
+    property_id : str | None
+        If set, restrict results to chunks belonging to this
+        property UUID. Used by the agentic pipeline to narrow
+        search to a specific property's documents.
 
     Returns
     -------
@@ -102,11 +107,12 @@ def retrieve(
     supabase = get_supabase()
 
     rpc_params = {
-        "query_embedding": query_embedding,
-        "query_text": query,
-        "match_count": top_k * 3,
-        "filter_doc_type": filter_doc_type,
-        "filter_doc_name": filter_doc_name,
+        "query_embedding":    query_embedding,
+        "query_text":         query,
+        "match_count":        top_k * 3,
+        "filter_doc_type":    filter_doc_type,
+        "filter_doc_name":    filter_doc_name,
+        "filter_property_id": property_id,   # new — agent passes this
     }
 
     try:

@@ -6,3 +6,4 @@ PyMuPDF
 python-docx
 websockets>=13.0,<16
 google-auth
+langgraph
