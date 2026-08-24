@@ -1,0 +1,770 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Liquid Obsidian Gold Theme - 2035 Aesthetic */
+  --background: #0a0805;
+  --foreground: #f0ead8;
+  --card: rgba(20, 18, 16, 0.8);
+  --card-foreground: #f0ead8;
+  --popover: rgba(20, 18, 16, 0.9);
+  --popover-foreground: #f0ead8;
+  --primary: #c9a84c;
+  --primary-foreground: #0a0805;
+  --primary-electric: #f0c060;
+  --primary-dim: #8a6d2f;
+  --secondary: #1c1916;
+  --secondary-foreground: #f0ead8;
+  --muted: #1c1916;
+  --muted-foreground: #a89880;
+  --accent: #c9a84c;
+  --accent-foreground: #0a0805;
+  --destructive: #f87171;
+  --destructive-foreground: #0a0805;
+  --success: #4ade80;
+  --success-foreground: #0a0805;
+  --warning: #f0c060;
+  --warning-foreground: #0a0805;
+  --border: rgba(201, 168, 76, 0.15);
+  --input: rgba(201, 168, 76, 0.15);
+  --ring: #c9a84c;
+  --gold-light: #e8d5a0;
+  --radius: 0.5rem;
+  --sidebar: rgba(20, 18, 16, 0.95);
+  --sidebar-foreground: #f0ead8;
+  --sidebar-primary: #c9a84c;
+  --sidebar-primary-foreground: #0a0805;
+  --sidebar-accent: rgba(201, 168, 76, 0.08);
+  --sidebar-accent-foreground: #f0ead8;
+  --sidebar-border: rgba(201, 168, 76, 0.12);
+  --sidebar-ring: #c9a84c;
+}
+
+.dark {
+  --background: #0a0805;
+  --foreground: #f0ead8;
+  --card: rgba(20, 18, 16, 0.8);
+  --card-foreground: #f0ead8;
+  --popover: rgba(20, 18, 16, 0.9);
+  --popover-foreground: #f0ead8;
+  --primary: #c9a84c;
+  --primary-foreground: #0a0805;
+  --primary-electric: #f0c060;
+  --primary-dim: #8a6d2f;
+  --secondary: #1c1916;
+  --secondary-foreground: #f0ead8;
+  --muted: #1c1916;
+  --muted-foreground: #a89880;
+  --accent: #c9a84c;
+  --accent-foreground: #0a0805;
+  --destructive: #f87171;
+  --destructive-foreground: #0a0805;
+  --success: #4ade80;
+  --success-foreground: #0a0805;
+  --warning: #f0c060;
+  --warning-foreground: #0a0805;
+  --border: rgba(201, 168, 76, 0.15);
+  --input: rgba(201, 168, 76, 0.15);
+  --ring: #c9a84c;
+  --gold-light: #e8d5a0;
+  --sidebar: rgba(20, 18, 16, 0.95);
+  --sidebar-foreground: #f0ead8;
+  --sidebar-primary: #c9a84c;
+  --sidebar-primary-foreground: #0a0805;
+  --sidebar-accent: rgba(201, 168, 76, 0.08);
+  --sidebar-accent-foreground: #f0ead8;
+  --sidebar-border: rgba(201, 168, 76, 0.12);
+  --sidebar-ring: #c9a84c;
+}
+
+@theme inline {
+  --font-sans: 'DM Sans', sans-serif;
+  --font-serif: 'DM Serif Display', serif;
+  --font-mono: 'DM Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-electric: var(--primary-electric);
+  --color-primary-dim: var(--primary-dim);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold-light: var(--gold-light);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LIQUID GLASS CARDS
+   ═══════════════════════════════════════════ */
+.glass-card {
+  background: rgba(20, 18, 16, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  box-shadow: 
+    0 0 0 1px rgba(201, 168, 76, 0.08),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(201, 168, 76, 0.1);
+}
+
+.glass-card-hover {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(201, 168, 76, 0.25);
+  transform: translateY(-4px);
+  box-shadow: 
+    0 0 0 1px rgba(201, 168, 76, 0.15),
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(201, 168, 76, 0.08),
+    inset 0 1px 0 rgba(201, 168, 76, 0.15);
+}
+
+/* ═══════════════════════════════════════════
+   GOLD GLOW EFFECTS
+   ═══════════════════════════════════════════ */
+.gold-glow {
+  box-shadow: 
+    0 0 60px rgba(201, 168, 76, 0.08),
+    0 0 120px rgba(201, 168, 76, 0.04);
+}
+
+.gold-glow-sm {
+  box-shadow: 0 0 30px rgba(201, 168, 76, 0.06);
+}
+
+.gold-glow-intense {
+  box-shadow: 
+    0 0 20px rgba(201, 168, 76, 0.15),
+    0 0 60px rgba(201, 168, 76, 0.1),
+    0 0 100px rgba(201, 168, 76, 0.05);
+}
+
+/* ═══════════════════════════════════════════
+   INPUT EFFECTS
+   ═══════════════════════════════════════════ */
+.input-glow:focus {
+  box-shadow: 
+    0 0 0 3px rgba(201, 168, 76, 0.1),
+    0 0 20px rgba(201, 168, 76, 0.05);
+}
+
+.input-gold-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.input-gold-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.input-gold-sweep:focus::before {
+  left: 100%;
+}
+
+/* ═══════════════════════════════════════════
+   CONFIDENCE BADGES
+   ═══════════════════════════════════════════ */
+@keyframes confidence-pulse-high {
+  0%, 100% { box-shadow: 0 0 10px rgba(74, 222, 128, 0.2); }
+  50%       { box-shadow: 0 0 20px rgba(74, 222, 128, 0.3); }
+}
+@keyframes confidence-pulse-medium {
+  0%, 100% { box-shadow: 0 0 10px rgba(240, 192, 96, 0.2); }
+  50%       { box-shadow: 0 0 20px rgba(240, 192, 96, 0.3); }
+}
+@keyframes confidence-pulse-low {
+  0%, 100% { box-shadow: 0 0 10px rgba(248, 113, 113, 0.2); }
+  50%       { box-shadow: 0 0 20px rgba(248, 113, 113, 0.3); }
+}
+
+.confidence-high   { animation: confidence-pulse-high   2s ease-in-out infinite; }
+.confidence-medium { animation: confidence-pulse-medium 2s ease-in-out infinite; }
+.confidence-low    { animation: confidence-pulse-low    2s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════
+   ANIMATED BORDER
+   ═══════════════════════════════════════════ */
+@keyframes border-travel {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-border { position: relative; }
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.4), transparent);
+  background-size: 200% 200%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-travel 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.animated-border:hover::before { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   MARCHING ANTS (for dropzone)
+   ═══════════════════════════════════════════ */
+@keyframes marching-ants {
+  0%   { background-position: 0 0, 100% 100%, 0 100%, 100% 0; }
+  100% { background-position: 20px 0, calc(100% - 20px) 100%, 0 calc(100% - 20px), 100% 20px; }
+}
+
+.marching-ants {
+  background-image:
+    linear-gradient(90deg, var(--primary) 50%, transparent 50%),
+    linear-gradient(90deg, var(--primary) 50%, transparent 50%),
+    linear-gradient(0deg, var(--primary) 50%, transparent 50%),
+    linear-gradient(0deg, var(--primary) 50%, transparent 50%);
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size: 10px 2px, 10px 2px, 2px 10px, 2px 10px;
+  background-position: 0 0, 100% 100%, 0 100%, 100% 0;
+  animation: marching-ants 0.5s linear infinite;
+}
+
+/* ═══════════════════════════════════════════
+   PROGRESS SHIMMER
+   ═══════════════════════════════════════════ */
+@keyframes progress-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.progress-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.3), transparent);
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   BUTTON EFFECTS
+   ═══════════════════════════════════════════ */
+.button-press { transition: transform 100ms ease; }
+.button-press:active { transform: scale(0.97); }
+
+@keyframes shimmer-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.button-shimmer { position: relative; overflow: hidden; }
+
+.button-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.button-shimmer:hover::before {
+  opacity: 1;
+  animation: shimmer-sweep 1s ease infinite;
+}
+
+/* ═══════════════════════════════════════════
+   SCANLINES OVERLAY
+   ═══════════════════════════════════════════ */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.02) 0px,
+    rgba(0,0,0,0.02) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  z-index: 9999;
+}
+
+/* ═══════════════════════════════════════════
+   NOISE TEXTURE
+   ═══════════════════════════════════════════ */
+.noise-texture::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  z-index: 9998;
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATED DOT GRID
+   ═══════════════════════════════════════════ */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.03; }
+  50%       { opacity: 0.08; }
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgba(201, 168, 76, 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: dot-pulse 4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR EFFECTS
+   ═══════════════════════════════════════════ */
+.nav-active { position: relative; }
+
+.nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 70%;
+  background: var(--primary);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
+}
+
+@keyframes logo-breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.02); }
+}
+
+.logo-breathe { animation: logo-breathe 4s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(10, 8, 5, 0.5); }
+::-webkit-scrollbar-thumb { background: rgba(201, 168, 76, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(201, 168, 76, 0.4); }
+
+/* ═══════════════════════════════════════════
+   DOCUMENT TYPE BADGES
+   ═══════════════════════════════════════════ */
+.badge-lease      { background: rgba(59, 130, 246, 0.15); color: #60a5fa; box-shadow: 0 0 10px rgba(59, 130, 246, 0.1); }
+.badge-amendment  { background: rgba(168, 85, 247, 0.15); color: #c084fc; box-shadow: 0 0 10px rgba(168, 85, 247, 0.1); }
+.badge-invoice    { background: rgba(201, 168, 76, 0.15); color: #c9a84c; box-shadow: 0 0 10px rgba(201, 168, 76, 0.1); }
+.badge-inspection { background: rgba(251, 146, 60, 0.15); color: #fb923c; box-shadow: 0 0 10px rgba(251, 146, 60, 0.1); }
+.badge-quote      { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; box-shadow: 0 0 10px rgba(45, 212, 191, 0.1); }
+.badge-work_order { background: rgba(244, 114, 182, 0.15); color: #f472b6; box-shadow: 0 0 10px rgba(244, 114, 182, 0.1); }
+
+/* ═══════════════════════════════════════════
+   PARTICLE CANVAS STYLES
+   ═══════════════════════════════════════════ */
+.particle-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════
+   TYPEWRITER CURSOR
+   ═══════════════════════════════════════════ */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.typewriter-cursor::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  color: var(--primary);
+  margin-left: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   TERMINAL CURSOR (for chunks)
+   ═══════════════════════════════════════════ */
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.terminal-cursor::after {
+  content: '_';
+  animation: terminal-blink 1s step-end infinite;
+  color: var(--success);
+}
+
+/* ═══════════════════════════════════════════
+   SHAKE ANIMATION (for errors)
+   ═══════════════════════════════════════════ */
+@keyframes shake {
+  0%, 100%                         { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90%         { transform: translateX(-4px); }
+  20%, 40%, 60%, 80%              { transform: translateX(4px); }
+}
+
+.shake { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* ═══════════════════════════════════════════
+   FLOAT UP ANIMATION
+   ═══════════════════════════════════════════ */
+@keyframes float-up {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.5); }
+}
+
+.float-up { animation: float-up 0.8s ease-out forwards; }
+
+/* ═══════════════════════════════════════════
+   3D SHAPE PERSPECTIVE
+   ═══════════════════════════════════════════ */
+.perspective-container {
+  perspective: 800px;
+  transform-style: preserve-3d;
+}
+
+/* ═══════════════════════════════════════════
+   LOGIN SPLIT LAYOUT
+   ═══════════════════════════════════════════ */
+/* Tints toward current theme (--background) so split seam matches light/green/dark */
+.login-building-overlay {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, color-mix(in srgb, var(--background) 38%, #000000 62%) 78%, transparent),
+    color-mix(in srgb, color-mix(in srgb, var(--background) 32%, #000000 68%) 58%, transparent),
+    color-mix(in srgb, color-mix(in srgb, var(--background) 42%, #000000 58%) 82%, transparent)
+  );
+}
+
+/* Light theme: indigo/slate tint — keeps building color; avoids a white “wash” */
+.light .login-building-overlay {
+  background: linear-gradient(
+    to right,
+    rgba(15, 23, 42, 0.5),
+    rgba(30, 27, 75, 0.36),
+    rgba(30, 41, 59, 0.44)
+  );
+}
+
+/* Softer seam into the login column (default: theme background) */
+.login-building-seam {
+  width: 8rem;
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--background) 60%, transparent),
+    transparent
+  );
+}
+
+.light .login-building-seam {
+  width: 11rem;
+  background: linear-gradient(
+    to left,
+    rgba(30, 27, 75, 0.1) 0%,
+    rgba(241, 245, 249, 0.55) 42%,
+    transparent 100%
+  );
+}
+
+/* Login right column: off-white panel so glass card reads against something */
+.light .login-form-panel {
+  background-color: var(--muted);
+}
+
+/* Frosted card vs flat white — scoped to login only */
+.light .login-form-panel .glass-card {
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(79, 70, 229, 0.05),
+    0 8px 32px rgba(30, 27, 75, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* ═══════════════════════════════════════════
+   DEMO TOOLTIP — always readable regardless of theme
+   The tooltip card always has a dark background.
+   Force text colors to cream/gold so they're readable
+   in light and green themes where CSS vars would be wrong.
+   ═══════════════════════════════════════════ */
+.demo-tooltip-inner .tooltip-title {
+  color: rgba(201, 168, 76, 0.75) !important;
+}
+.demo-tooltip-inner .tooltip-body {
+  color: rgba(240, 234, 216, 0.85) !important;
+}
+.demo-tooltip-inner .tooltip-tech {
+  color: rgba(201, 168, 76, 0.5) !important;
+}
+
+/* ═══════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   THEME: LIGHT (White + Indigo)
+   ═══════════════════════════════════════════ */
+.light {
+  --background: #ffffff;
+  --foreground: #1e1b4b;
+  --card: rgba(255, 255, 255, 0.9);
+  --card-foreground: #1e1b4b;
+  --popover: rgba(255, 255, 255, 0.95);
+  --popover-foreground: #1e1b4b;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --primary-electric: #6366f1;
+  --primary-dim: #818cf8;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e1b4b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #4f46e5;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --border: rgba(79, 70, 229, 0.15);
+  --input: rgba(79, 70, 229, 0.1);
+  --ring: #4f46e5;
+  --gold-light: #c7d2fe;
+  --sidebar: rgba(248, 250, 252, 0.98);
+  --sidebar-foreground: #1e1b4b;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(79, 70, 229, 0.08);
+  --sidebar-accent-foreground: #1e1b4b;
+  --sidebar-border: rgba(79, 70, 229, 0.1);
+  --sidebar-ring: #4f46e5;
+}
+
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(79, 70, 229, 0.06),
+    0 4px 24px rgba(79, 70, 229, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.light .glass-card-hover:hover {
+  border-color: rgba(79, 70, 229, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(79, 70, 229, 0.12),
+    0 8px 32px rgba(79, 70, 229, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.light ::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.8); }
+.light ::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.2); }
+.light ::-webkit-scrollbar-thumb:hover { background: rgba(79, 70, 229, 0.4); }
+
+/* ═══════════════════════════════════════════
+   THEME: GREEN (Dark Forest + Gold)
+   FIX: sidebar hover uses gold, not emerald
+   FIX: muted text is readable on dark green bg
+   ═══════════════════════════════════════════ */
+.green {
+  --background: #061a0a;
+  --foreground: #d1fae5;
+  --card: rgba(10, 30, 14, 0.85);
+  --card-foreground: #d1fae5;
+  --popover: rgba(10, 30, 14, 0.95);
+  --popover-foreground: #d1fae5;
+  --primary: #c9a84c;
+  --primary-foreground: #061a0a;
+  --primary-electric: #f0c060;
+  --primary-dim: #8a6d2f;
+  --secondary: #0d2b12;
+  --secondary-foreground: #d1fae5;
+  --muted: #0d2b12;
+  --muted-foreground: #86efac; /* softer green — was too bright */
+  --accent: #c9a84c;
+  --accent-foreground: #061a0a;
+  --destructive: #f87171;
+  --destructive-foreground: #061a0a;
+  --success: #34d399;
+  --success-foreground: #061a0a;
+  --warning: #f0c060;
+  --warning-foreground: #061a0a;
+  --border: rgba(201, 168, 76, 0.15); /* gold border, not green */
+  --input: rgba(201, 168, 76, 0.12);
+  --ring: #c9a84c;
+  --gold-light: #e8d5a0;
+  --sidebar: rgba(8, 14, 11, 0.97);
+  --sidebar-foreground: #d1fae5;
+  --sidebar-primary: #c9a84c;
+  --sidebar-primary-foreground: #061a0a;
+  /* ── KEY FIX: gold hover instead of green-on-green ── */
+  --sidebar-accent: rgba(201, 168, 76, 0.08);
+  --sidebar-accent-foreground: #d1fae5;
+  --sidebar-border: rgba(201, 168, 76, 0.12);
+  --sidebar-ring: #c9a84c;
+}
+
+.green .glass-card {
+  background: rgba(12, 20, 16, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(201, 168, 76, 0.12); /* gold border */
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(201, 168, 76, 0.06);
+}
+
+.green .glass-card-hover:hover {
+  border-color: rgba(201, 168, 76, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.1),
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    0 0 30px rgba(201, 168, 76, 0.05),
+    inset 0 1px 0 rgba(201, 168, 76, 0.08);
+}
+
+/* Dot grid uses subtle gold tint in green theme */
+.green .dot-grid {
+  background-image: radial-gradient(rgba(201, 168, 76, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.green ::-webkit-scrollbar-track { background: rgba(8, 14, 11, 0.6); }
+.green ::-webkit-scrollbar-thumb { background: rgba(201, 168, 76, 0.15); }
+.green ::-webkit-scrollbar-thumb:hover { background: rgba(201, 168, 76, 0.3); }
+
+/* ═══════════════════════════════════════════
+   THEME: MIDNIGHT (Production Dark)
+   Neutral black background, white text.
+   Used by the Light theme button toggle.
+   ═══════════════════════════════════════════ */
+.midnight {
+  --background: #0b0f14;
+  --foreground: #e6edf7;
+  --card: rgba(15, 23, 42, 0.72);
+  --card-foreground: #e6edf7;
+  --popover: rgba(15, 23, 42, 0.9);
+  --popover-foreground: #e6edf7;
+
+  /* Keep brand accent subtle + professional (cool indigo) */
+  --primary: #6366f1;
+  --primary-foreground: #0b0f14;
+  --primary-electric: #818cf8;
+  --primary-dim: #a5b4fc;
+
+  --secondary: #0f172a;
+  --secondary-foreground: #e6edf7;
+  --muted: #0f172a;
+  --muted-foreground: #9aa8bd;
+
+  --accent: #6366f1;
+  --accent-foreground: #0b0f14;
+  --destructive: #ef4444;
+  --destructive-foreground: #0b0f14;
+  --success: #22c55e;
+  --success-foreground: #0b0f14;
+  --warning: #f59e0b;
+  --warning-foreground: #0b0f14;
+
+  --border: rgba(148, 163, 184, 0.14);
+  --input: rgba(148, 163, 184, 0.14);
+  --ring: #818cf8;
+  --gold-light: #a5b4fc;
+
+  --sidebar: rgba(10, 14, 20, 0.98);
+  --sidebar-foreground: #e6edf7;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #0b0f14;
+  --sidebar-accent: rgba(99, 102, 241, 0.08);
+  --sidebar-accent-foreground: #e6edf7;
+  --sidebar-border: rgba(148, 163, 184, 0.12);
+  --sidebar-ring: #818cf8;
+}
+
+.midnight .glass-card {
+  background: rgba(10, 14, 20, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.05),
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.midnight .dot-grid {
+  background-image: radial-gradient(rgba(99, 102, 241, 0.12) 1px, transparent 1px);
+}
+
+.midnight ::-webkit-scrollbar-track { background: rgba(10, 14, 20, 0.6); }
+.midnight ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.16); }
+.midnight ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.28); }
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE: crisp 50/50 split circle
+   (Half white, half black) + 1px divider.
+   ═══════════════════════════════════════════ */
+/* Theme toggle split swatch is rendered with 2 solid spans (no gradients). */

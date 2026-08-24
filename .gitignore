@@ -27,3 +27,9 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Next.js frontend
+crestmind-frontend/node_modules/
+crestmind-frontend/.next/
+crestmind-frontend/.vercel/
+crestmind-frontend/.env*.local
