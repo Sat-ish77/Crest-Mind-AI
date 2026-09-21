@@ -12,10 +12,12 @@ ON-PREMISE SWAP:
 
 import os
 import tempfile
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import logging
+from datetime import datetime
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
 from dotenv import load_dotenv
 
 from db.client import get_supabase
@@ -27,6 +29,11 @@ from rag.generator import generate_answer
 from rag.agent import run_agent
 
 load_dotenv()
+
+logger = logging.getLogger("crestmind.api")
+
+_cors_setting = os.getenv("CORS_ORIGINS", "*")
+ALLOWED_ORIGINS = [origin.strip() for origin in _cors_setting.split(",") if origin.strip()]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # APP INIT
@@ -68,7 +75,64 @@ class DocumentInfo(BaseModel):
     doc_name: str
     doc_type: str
     chunks: int
+    created_at: str  # ISO 8601 timestamptz from DB (time + offset)
+
+class FeedbackSource(BaseModel):
+    """Snapshot of one citation as it appeared with the judged answer."""
+
+    doc_name: str = Field(..., min_length=1, max_length=500)
+    section: Optional[str] = Field(default=None, max_length=500)
+    page_number: Optional[int] = Field(default=None, ge=0)
+    confidence: Optional[Literal["high", "medium", "low"]] = None
+    chunk_text: Optional[str] = Field(default=None, max_length=50_000)
+
+
+class FeedbackRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=10_000)
+    answer: str = Field(..., min_length=1, max_length=200_000)
+    action: Literal["verified", "flagged"]
+    overall_confidence: Optional[Literal["high", "medium", "low", "none"]] = None
+    sources: list[FeedbackSource] = Field(default_factory=list)
+    username: Optional[str] = Field(default=None, max_length=200)
+    note: Optional[str] = Field(default=None, max_length=5_000)
+
+
+class FeedbackResponse(BaseModel):
+    success: bool
+    id: Optional[str] = None
+
+
+class FeedbackLog(BaseModel):
+    id: str
     created_at: str
+    username: Optional[str] = None
+    query: str
+    answer: str
+    overall_confidence: Optional[str] = None
+    sources: list[FeedbackSource] = Field(default_factory=list)
+    action: Literal["verified", "flagged"]
+    note: Optional[str] = None
+
+
+class FeedbackListResponse(BaseModel):
+    logs: list[FeedbackLog] = Field(default_factory=list)
+
+
+def _created_at_iso(value) -> str:
+    """Normalize Supabase created_at to an ISO 8601 string for JSON."""
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _model_to_dict(model: BaseModel) -> dict:
+    """Support both Pydantic v1 and v2 while deployments are being aligned."""
+    if hasattr(model, "model_dump"):
+        return model.model_dump()
+    return model.dict()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINTS
@@ -278,3 +342,116 @@ def get_chunks(doc_name: str, section: Optional[str] = None):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HUMAN-IN-THE-LOOP FEEDBACK (CR-CAP2-001)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post(
+    "/feedback",
+    response_model=FeedbackResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def submit_feedback(request: FeedbackRequest):
+    """
+    Record a human judgement on an AI answer.
+
+    Writes one row to audit_logs. Nothing here retrains anything —
+    this is an audit trail so a person's verification (or rejection)
+    of an answer is recoverable after the fact.
+
+    Body:
+        query              — the question that was asked
+        answer             — the answer that was shown
+        action             — "verified" or "flagged"
+        overall_confidence — the confidence label shown at the time
+        sources            — source list as displayed (snapshotted)
+        username           — self-reported, NOT authenticated
+        note               — optional free text, used when flagging
+
+    Returns:
+        success — True if the row was written
+        id      — UUID of the new audit_logs row
+    """
+    query = request.query.strip()
+    answer = request.answer.strip()
+    username = request.username.strip() if request.username else None
+    note = request.note.strip() if request.note else None
+
+    if not query or not answer:
+        raise HTTPException(
+            status_code=400,
+            detail="query and answer are both required",
+        )
+    if len(request.sources) > 25:
+        raise HTTPException(
+            status_code=400,
+            detail="A feedback record can contain at most 25 sources",
+        )
+
+    try:
+        sb = get_supabase()
+        result = sb.table("audit_logs").insert({
+            "query":              query,
+            "answer":             answer,
+            "action":             request.action,
+            "overall_confidence": request.overall_confidence,
+            "sources":            [_model_to_dict(source) for source in request.sources],
+            "username":           username,
+            "note":               note,
+        }).execute()
+
+        row_id = result.data[0]["id"] if result.data else None
+        return {"success": True, "id": row_id}
+
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to store answer feedback")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Feedback storage is temporarily unavailable",
+        )
+
+
+@app.get("/feedback", response_model=FeedbackListResponse)
+def list_feedback(
+    action: Optional[Literal["verified", "flagged"]] = None,
+    limit: int = Query(default=100, ge=1, le=500),
+):
+    """
+    Read the audit trail, newest first (Review page).
+
+    Query params:
+        action — optional: "verified" or "flagged" to filter
+        limit  — max rows to return (default 100)
+
+    Returns:
+        logs — list of audit_logs rows
+    """
+    try:
+        sb = get_supabase()
+        q = (
+            sb.table("audit_logs")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
+        if action:
+            q = q.eq("action", action)
+
+        rows = q.execute()
+        logs = rows.data or []
+        for log in logs:
+            log["created_at"] = _created_at_iso(log.get("created_at"))
+        return {"logs": logs}
+
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to read answer feedback")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Feedback history is temporarily unavailable",
+        )
