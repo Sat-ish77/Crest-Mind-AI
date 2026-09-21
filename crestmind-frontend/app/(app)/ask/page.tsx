@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Search, DollarSign, CalendarDays, ShieldCheck, ParkingCircle, Droplet, PawPrint, ChevronDown, FileText, Loader2, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Lock } from 'lucide-react'
+import { Search, DollarSign, CalendarDays, ShieldCheck, ParkingCircle, Droplet, PawPrint, ChevronDown, FileText, Loader2, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Lock, ThumbsUp, Flag, BookOpen, ListFilter, Sparkles, Network, ArrowDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { askQuestion, AskResponse, Source, getDocuments, isDemoMode } from '@/lib/api'
+import { askQuestion, AskResponse, Source, getDocuments, isDemoMode, submitFeedback } from '@/lib/api'
+import { useAuth } from '@/lib/auth-context'
 import { Spinner } from '@/components/ui/spinner'
 import { toast } from 'sonner'
 import useSWR from 'swr'
@@ -131,6 +132,183 @@ function SourceCard({ source, index }: { source: Source; index: number }) {
   )
 }
 
+const answerPipelineStages = [
+  { title: 'Reading approved files', description: 'Checking the selected document library', icon: BookOpen },
+  { title: 'Running hybrid search', description: 'Matching meaning and exact keywords', icon: Search },
+  { title: 'Ranking evidence', description: 'RRF brings the strongest passages forward', icon: ListFilter },
+  { title: 'Building cited answer', description: 'Writing only from the retrieved evidence', icon: Sparkles },
+]
+
+function LiveAnswerPipeline() {
+  const [activeStep, setActiveStep] = useState(0)
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveStep((current) => Math.min(current + 1, answerPipelineStages.length - 1))
+    }, 600)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  return (
+    <motion.section
+      className="answer-pipeline"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      aria-live="polite"
+    >
+      <div className="answer-pipeline-header">
+        <div>
+          <p className="answer-pipeline-kicker">CrestMind is working</p>
+          <h2>Building a source-backed answer</h2>
+        </div>
+        <div className="answer-pipeline-live"><span /> Live request</div>
+      </div>
+
+      <div className="answer-pipeline-track" aria-hidden="true">
+        <motion.span
+          animate={{ width: `${Math.max(10, (activeStep / (answerPipelineStages.length - 1)) * 100)}%` }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+        />
+      </div>
+
+      <div className="answer-pipeline-steps">
+        {answerPipelineStages.map(({ title, description, icon: Icon }, index) => {
+          const complete = index < activeStep
+          const active = index === activeStep
+          return (
+            <div
+              key={title}
+              className={cn(
+                'answer-pipeline-step',
+                complete && 'answer-pipeline-step--complete',
+                active && 'answer-pipeline-step--active'
+              )}
+            >
+              <div className="answer-pipeline-icon">
+                {complete ? <CheckCircle /> : <Icon />}
+              </div>
+              <div>
+                <p>{title}</p>
+                <span>{description}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="answer-pipeline-note">The API returns one final response; these are the retrieval stages CrestMind is completing while you wait.</p>
+    </motion.section>
+  )
+}
+
+const constellationPositions = [
+  { x: 18, y: 24 },
+  { x: 82, y: 24 },
+  { x: 12, y: 66 },
+  { x: 88, y: 66 },
+  { x: 28, y: 88 },
+  { x: 72, y: 88 },
+]
+
+function CitationConstellation({ sources, confidence }: { sources: Source[]; confidence: string }) {
+  const visibleSources = sources.slice(0, constellationPositions.length)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const selectedSource = visibleSources[selectedIndex] || visibleSources[0]
+
+  if (!selectedSource) return null
+
+  const openFullCitation = () => {
+    document.getElementById(`source-citation-${selectedIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  return (
+    <motion.section
+      className="citation-constellation"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.5 }}
+    >
+      <div className="citation-constellation-header">
+        <div>
+          <p className="citation-constellation-kicker"><Network /> Evidence map</p>
+          <h2>See exactly what supports this answer</h2>
+        </div>
+        <span>{visibleSources.length} connected {visibleSources.length === 1 ? 'source' : 'sources'}</span>
+      </div>
+
+      <div className="citation-constellation-stage">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {visibleSources.map((_, index) => {
+            const position = constellationPositions[index]
+            return (
+              <motion.line
+                key={index}
+                x1="50"
+                y1="52"
+                x2={position.x}
+                y2={position.y}
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: selectedIndex === index ? 0.9 : 0.32 }}
+                transition={{ delay: 0.28 + index * 0.08, duration: 0.55 }}
+              />
+            )
+          })}
+        </svg>
+
+        <div className="citation-answer-core">
+          <ShieldCheck />
+          <strong>Source-backed answer</strong>
+          <span>{confidence} confidence</span>
+        </div>
+
+        {visibleSources.map((source, index) => {
+          const position = constellationPositions[index]
+          return (
+            <motion.button
+              type="button"
+              key={`${source.doc_name}-${source.section}-${index}`}
+              className={cn('citation-node', selectedIndex === index && 'citation-node--active')}
+              style={{ left: `${position.x}%`, top: `${position.y}%` }}
+              onClick={() => setSelectedIndex(index)}
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 + index * 0.08, type: 'spring', stiffness: 220, damping: 18 }}
+              aria-pressed={selectedIndex === index}
+            >
+              <FileText />
+              <span>
+                <strong>{source.doc_name}</strong>
+                <small>Page {source.page_number}</small>
+              </span>
+            </motion.button>
+          )
+        })}
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${selectedSource.doc_name}-${selectedSource.section}`}
+          className="citation-preview"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+        >
+          <div className="citation-preview-meta">
+            <span>Selected evidence</span>
+            <strong>{selectedSource.doc_name} · Page {selectedSource.page_number}</strong>
+            <small>{selectedSource.section}</small>
+          </div>
+          <p>{selectedSource.chunk_text}</p>
+          <button type="button" onClick={openFullCitation}>
+            Open full citation <ArrowDown />
+          </button>
+        </motion.div>
+      </AnimatePresence>
+    </motion.section>
+  )
+}
+
 // ── REPLACED AnimatedAnswer with MarkdownAnswer ──
 // Properly renders markdown tables, bold, lists from LLM output
 function MarkdownAnswer({ text }: { text: string }) {
@@ -218,12 +396,133 @@ function MarkdownAnswer({ text }: { text: string }) {
   )
 }
 
+// ── HITL verification controls (CR-CAP2-001) ──
+// Writes a human judgement of this answer to the audit trail.
+// Records only — nothing here changes the answer or retrains anything.
+function AnswerFeedback({ response, query }: { response: AskResponse; query: string }) {
+  const { user } = useAuth()
+  const [submitted, setSubmitted] = useState<'verified' | 'flagged' | null>(null)
+  const [isFlagging, setIsFlagging] = useState(false)
+  const [note, setNote] = useState('')
+  const [isSending, setIsSending] = useState(false)
+
+  const send = async (action: 'verified' | 'flagged') => {
+    setIsSending(true)
+    try {
+      await submitFeedback({
+        query,
+        answer: response.answer,
+        action,
+        overall_confidence: response.overall_confidence,
+        sources: response.sources,
+        username: user?.username,
+        note: note.trim() || undefined,
+      })
+      setSubmitted(action)
+      setIsFlagging(false)
+      toast.success(action === 'verified' ? 'Marked as verified' : 'Error flagged for review')
+    } catch (error) {
+      console.error('Feedback error:', error)
+      toast.error('Could not record your feedback. Please try again.')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <motion.div
+        className="flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        {submitted === 'verified' ? (
+          <><CheckCircle className="w-3.5 h-3.5 text-success" /> Verified by {user?.username ?? 'you'}</>
+        ) : (
+          <><Flag className="w-3.5 h-3.5 text-destructive" /> Flagged for review</>
+        )}
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      className="space-y-3 px-1"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mr-1">
+          Is this answer correct?
+        </p>
+
+        <motion.button
+          onClick={() => send('verified')}
+          disabled={isSending}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-success/30 bg-success/10 text-success text-[10px] font-bold uppercase tracking-[0.15em] transition-all hover:bg-success/20 disabled:opacity-40 disabled:cursor-not-allowed button-press"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <ThumbsUp className="w-3.5 h-3.5" />
+          Verify
+        </motion.button>
+
+        <motion.button
+          onClick={() => setIsFlagging(!isFlagging)}
+          disabled={isSending}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-[0.15em] transition-all hover:bg-destructive/20 disabled:opacity-40 disabled:cursor-not-allowed button-press"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Flag className="w-3.5 h-3.5" />
+          Flag Error
+        </motion.button>
+      </div>
+
+      <AnimatePresence>
+        {isFlagging && (
+          <motion.div
+            className="space-y-3"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="What is wrong with this answer? (optional — e.g. wrong date, wrong dollar amount, wrong property)"
+              rows={3}
+              className="w-full glass-card rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30 transition-all placeholder:text-muted-foreground/30 resize-none"
+              disabled={isSending}
+            />
+            <motion.button
+              onClick={() => send('flagged')}
+              disabled={isSending}
+              className="inline-flex items-center gap-2 bg-destructive text-destructive-foreground font-bold px-6 py-2.5 rounded-lg text-[10px] uppercase tracking-[0.15em] transition-all disabled:opacity-40 disabled:cursor-not-allowed button-press"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Flag className="w-3.5 h-3.5" />}
+              Submit Flag
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
 export default function AskPage() {
   const [query, setQuery] = useState('')
   const [filterDocType, setFilterDocType] = useState('')
   const [filterDocName, setFilterDocName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [response, setResponse] = useState<AskResponse | null>(null)
+  // The question actually sent. `query` keeps changing as the user types,
+  // and the audit row has to record what was asked, not what's in the box now.
+  const [lastQuery, setLastQuery] = useState('')
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
   const [isFocused, setIsFocused] = useState(false)
 
@@ -279,6 +578,7 @@ export default function AskPage() {
         top_k: 5,
       })
       setResponse(result)
+      setLastQuery(q)
     } catch (error) {
       console.error('Ask error:', error)
       toast.error('Failed to get answer. Please check if the API is running.')
@@ -464,39 +764,7 @@ export default function AskPage() {
         {/* Loading State */}
         <AnimatePresence>
           {isLoading && (
-            <motion.div
-              className="flex flex-col items-center justify-center py-20"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div className="relative">
-                <motion.div
-                  className="w-16 h-16 rounded-full border-2 border-primary/20"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                >
-                  <div className="w-12 h-12 rounded-full border-2 border-transparent border-t-primary" />
-                </motion.div>
-              </motion.div>
-              <motion.p
-                className="text-sm text-muted-foreground mt-6 tracking-wide"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                {demo ? 'Running hybrid search + RRF...' : 'Analyzing documents...'}
-              </motion.p>
-              <motion.div
-                className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
-                animate={{ y: [0, 100, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-            </motion.div>
+            <LiveAnswerPipeline />
           )}
         </AnimatePresence>
 
@@ -538,6 +806,12 @@ export default function AskPage() {
                 <MarkdownAnswer text={response.answer} />
               </motion.div>
 
+              {deduplicatedSources.length > 0 && response.found_in_documents && (
+                <CitationConstellation sources={deduplicatedSources} confidence={response.overall_confidence} />
+              )}
+
+              <AnswerFeedback response={response} query={lastQuery} />
+
               {deduplicatedSources.length > 0 && (
                 <motion.div
                   className="space-y-4"
@@ -550,11 +824,9 @@ export default function AskPage() {
                   </p>
                   <div className="space-y-3">
                     {deduplicatedSources.map((source, index) => (
-                      <SourceCard
-                        key={`${source.doc_name}-${source.section}-${index}`}
-                        source={source}
-                        index={index}
-                      />
+                      <div id={`source-citation-${index}`} key={`${source.doc_name}-${source.section}-${index}`}>
+                        <SourceCard source={source} index={index} />
+                      </div>
                     ))}
                   </div>
                 </motion.div>
