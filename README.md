@@ -71,7 +71,9 @@ Answer + Source Citation
 ## 📁 Project Structure
 ```
 crestmind-ai/
+├── api.py                  ← FastAPI backend (RAG, documents, HITL feedback)
 ├── app.py                  ← Streamlit prototype
+├── crestmind-frontend/     ← Next.js property-manager application
 ├── ingest/
 │   ├── loader.py           ← PDF/DOCX → raw text
 │   ├── chunker.py          ← text → chunks
@@ -81,6 +83,7 @@ crestmind-ai/
 │   └── generator.py        ← LLM call + citations
 ├── db/
 │   ├── schema.sql          ← Supabase table setup
+│   ├── audit_logs.sql      ← HITL feedback/audit migration
 │   └── client.py           ← Supabase connection
 ├── ui/
 │   └── components.py       ← UI components
@@ -97,9 +100,29 @@ crestmind-ai/
 OPENAI_API_KEY=        ← for embeddings
 GROQ_API_KEY=          ← for LLM calls (dev)
 SUPABASE_URL=          ← your Supabase project URL
-SUPABASE_KEY=          ← your Supabase anon key
+SUPABASE_KEY=          ← backend-only Supabase service-role key
+CORS_ORIGINS=          ← exact frontend URL(s), comma-separated in production
 GCP_PROJECT_ID=        ← for Vertex AI (prod)
 ```
+
+---
+
+## Human-in-the-Loop feedback
+
+Property managers can verify a useful answer or flag an incorrect one. The
+backend stores an immutable snapshot of the question, answer, citations,
+confidence, reviewer, and optional note.
+
+1. Run `db/audit_logs.sql` in the Supabase SQL editor once.
+2. Keep `SUPABASE_KEY` on the backend only; the audit table has RLS enabled.
+3. Deploy the current `api.py` image so Cloud Run exposes:
+   - `POST /feedback` — store a verified/flagged judgement.
+   - `GET /feedback?action=flagged|verified` — read the newest audit records.
+4. Run `python -m unittest tests.test_feedback_api` after installing the
+   requirements to verify validation, persistence, filtering, and safe errors.
+
+Feedback is an audit and improvement queue. It does not automatically retrain
+the model or silently change future answers.
 
 ---
 
@@ -117,4 +140,4 @@ GCP_PROJECT_ID=        ← for Vertex AI (prod)
 
 - Never commit `.env` — it contains secret keys
 - Never commit `data/samples/` — client documents are confidential
-- Always work on `sample` or `develop`, never directly on `main` 
+- Always work on `sample` or `develop`, never directly on `main`

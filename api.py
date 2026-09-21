@@ -45,11 +45,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow React frontend to call this API from any origin
+# Local/demo deployments default to any origin. Production should set
+# CORS_ORIGINS to the exact Woodcrest frontend domain(s), comma-separated.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=ALLOWED_ORIGINS != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
