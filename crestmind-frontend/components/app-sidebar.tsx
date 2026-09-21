@@ -59,7 +59,7 @@ function SidebarTooltip({ title, description, tech, children }: SidebarTooltipPr
             transition={{ duration: 0.15 }}
           >
             <div
-              className="rounded-xl p-3 border"
+              className="demo-tooltip-inner rounded-xl p-3 border"
               style={{
                 background: 'rgba(14,12,10,0.97)',
                 backdropFilter: 'blur(20px)',
@@ -67,14 +67,14 @@ function SidebarTooltip({ title, description, tech, children }: SidebarTooltipPr
                 boxShadow: '0 0 0 1px rgba(201,168,76,0.08), 0 20px 40px rgba(0,0,0,0.7)',
               }}
             >
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">
+              <p className="tooltip-title text-[10px] font-bold uppercase tracking-[0.16em] mb-1">
                 {title}
               </p>
-              <p className="text-xs text-foreground/80 leading-relaxed mb-1.5">
+              <p className="tooltip-body text-xs leading-relaxed mb-1.5">
                 {description}
               </p>
               {tech && (
-                <p className="text-[10px] font-mono text-primary/50">⚙ {tech}</p>
+                <p className="tooltip-tech text-[10px] font-mono">⚙ {tech}</p>
               )}
             </div>
           </motion.div>
@@ -91,7 +91,7 @@ function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-3 px-1">
-      <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40 flex-1">
+      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground flex-1">
         Appearance
       </span>
       <div className="flex items-center rounded-full border border-border/70 bg-background/45 p-1">
@@ -120,6 +120,7 @@ const navItems = [
   {
     href: '/dashboard',
     label: 'Home',
+    demoDescription: 'Overview and recent activity',
     icon: Home,
     tooltip: {
       title: 'DASHBOARD',
@@ -130,6 +131,7 @@ const navItems = [
   {
     href: '/ask',
     label: 'Ask a Question',
+    demoDescription: 'Search documents with citations',
     icon: MessageSquare,
     tooltip: {
       title: 'RAG QUERY ENGINE',
@@ -140,6 +142,7 @@ const navItems = [
   {
     href: '/ingest',
     label: 'Document Library',
+    demoDescription: 'Browse the trusted source files',
     icon: Upload,
     tooltip: {
       title: 'DOCUMENT LIBRARY',
@@ -150,6 +153,7 @@ const navItems = [
   {
     href: '/review',
     label: 'Answer Review',
+    demoDescription: 'Verify or flag AI answers',
     icon: ShieldCheck,
     tooltip: {
       title: 'HUMAN-IN-THE-LOOP AUDIT',
@@ -205,7 +209,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             </motion.div>
             <div className="flex flex-col">
               <h1 className="font-serif text-lg text-primary tracking-tight">CrestMind AI</h1>
-              <p className="text-[8px] text-muted-foreground/60 uppercase tracking-[0.2em]">Property Intelligence</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.16em]">Property Intelligence</p>
             </div>
           </Link>
         </SidebarTooltip>
@@ -217,8 +221,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             animate={{ opacity: 1, y: 0 }}
             className="mt-3 flex items-center gap-1.5 px-2 py-1 rounded-md border border-primary/30 bg-primary/5 w-fit"
           >
-            <FlaskConical className="w-3 h-3 text-primary/70" />
-            <span className="text-[9px] font-bold text-primary/70 uppercase tracking-[0.15em]">
+            <FlaskConical className="w-3 h-3 text-primary" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.14em]">
               Demo Mode
             </span>
           </motion.div>
@@ -230,7 +234,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 px-3 mb-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground px-3 mb-3">
           Navigation
         </p>
         {navItems.map((item, index) => {
@@ -252,10 +256,10 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                   href={item.href}
                   onClick={handleNavigation}
                   className={cn(
-                    'relative flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-300',
+                    'relative flex items-start gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-300',
                     isActive
                       ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-primary'
                   )}
                 >
                   <AnimatePresence>
@@ -270,8 +274,15 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                       />
                     )}
                   </AnimatePresence>
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <Icon className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block">{item.label}</span>
+                    {demo && (
+                      <span className="mt-0.5 block text-[11px] leading-snug font-normal text-muted-foreground">
+                        {item.demoDescription}
+                      </span>
+                    )}
+                  </span>
                 </Link>
               </SidebarTooltip>
             </motion.div>
@@ -285,13 +296,13 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             description="The approved Woodcrest property files CrestMind searches to produce source-backed answers."
             tech="Secure searchable document index"
           >
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 px-3 mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground px-3 mb-3">
               Document Library
             </p>
           </SidebarTooltip>
           <div className="space-y-1 max-h-64 overflow-y-auto">
             {documents.length === 0 ? (
-              <p className="text-xs text-muted-foreground/40 px-3 italic">No documents uploaded</p>
+              <p className="text-xs text-muted-foreground px-3 italic">No documents uploaded</p>
             ) : (
               documents.slice(0, 10).map((doc: Document, index: number) => (
                 <motion.div
@@ -302,8 +313,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                   transition={{ delay: 0.2 + index * 0.03 }}
                   whileHover={{ x: 4 }}
                 >
-                  <FolderOpen className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
-                  <span className="text-xs text-muted-foreground/60 group-hover:text-sidebar-foreground truncate flex-1 transition-colors">
+                  <FolderOpen className="w-3.5 h-3.5 text-primary/80 group-hover:text-primary transition-colors" />
+                  <span className="text-xs text-sidebar-foreground group-hover:text-primary truncate flex-1 transition-colors">
                     {doc.doc_name}
                   </span>
                   <span className={cn(
@@ -334,7 +345,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate text-foreground/90">{user?.username || 'User'}</p>
-               <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.1em]">Property Manager · Woodcrest</p>
+               <p className="text-[10px] text-muted-foreground uppercase tracking-[0.08em]">Property Manager · Woodcrest</p>
             </div>
           </div>
         )}
@@ -342,7 +353,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {!demo && (
           <motion.button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

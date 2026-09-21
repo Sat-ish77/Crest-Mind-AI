@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Eye, EyeOff, Lock, User, Sparkles, Building2, ShieldCheck, FileSearch, AlertCircle, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, Sparkles, Building2, ShieldCheck, FileSearch, AlertCircle, ArrowRight, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/lib/auth-context'
@@ -167,14 +167,9 @@ function LoginForm() {
   const [isShaking, setIsShaking]   = useState(false)
   const [isSuccess, setIsSuccess]   = useState(false)
   const [formError, setFormError]   = useState('')
-  const { setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const { login, user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-
-  // Always start sign-in on the white/purple theme (even if localStorage had another theme saved).
-  useEffect(() => {
-    setTheme('light')
-  }, [setTheme])
 
   useEffect(() => {
     if (!authLoading && user) router.push('/dashboard')
@@ -238,6 +233,17 @@ function LoginForm() {
 
       {/* ── RIGHT: Login form ── */}
       <div className="login-form-panel flex-1 flex flex-col items-center justify-center relative overflow-hidden px-5 py-6 lg:px-10 lg:py-4">
+
+        <button
+          type="button"
+          className="login-theme-toggle"
+          onClick={() => setTheme(resolvedTheme === 'midnight' ? 'light' : 'midnight')}
+          aria-label={resolvedTheme === 'midnight' ? 'Use light appearance' : 'Use dark appearance'}
+          title={resolvedTheme === 'midnight' ? 'Use light appearance' : 'Use dark appearance'}
+        >
+          {resolvedTheme === 'midnight' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <span>{resolvedTheme === 'midnight' ? 'Light' : 'Dark'}</span>
+        </button>
 
         {/* Mobile-only particle field + decorations */}
         <div className="lg:hidden absolute inset-0">
@@ -308,7 +314,7 @@ function LoginForm() {
                     CrestMind AI
                   </motion.h1>
                   <motion.p
-                    className="login-compact-hide text-[9px] font-semibold tracking-[0.26em] text-primary/60 uppercase"
+                    className="login-compact-hide text-[10px] font-semibold tracking-[0.22em] text-primary uppercase"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
@@ -339,7 +345,7 @@ function LoginForm() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.25 }}
                   >
-                    <label className="block text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mb-1.5 px-1">
+                    <label className="block text-[11px] font-bold text-primary uppercase tracking-[0.16em] mb-1.5 px-1">
                       Property manager name
                     </label>
                     <div className="relative group">
@@ -348,10 +354,10 @@ function LoginForm() {
                         value={username}
                         onChange={e => setUsername(e.target.value)}
                         placeholder="Enter your name or username"
-                        className="w-full bg-background/50 border border-primary/20 rounded-lg h-12 px-4 pr-10 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 input-glow input-gold-sweep transition-all caret-primary"
+                        className="w-full bg-background/70 border border-border rounded-lg h-12 px-4 pr-10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary input-glow input-gold-sweep transition-all caret-primary"
                         disabled={isLoading}
                       />
-                      <User className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30 group-focus-within:text-primary/60 transition-colors" />
+                      <User className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/70 group-focus-within:text-primary transition-colors" />
                     </div>
                   </motion.div>
 
@@ -373,7 +379,7 @@ function LoginForm() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.32 }}
                   >
-                    <label className="block text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mb-1.5 px-1">
+                    <label className="block text-[11px] font-bold text-primary uppercase tracking-[0.16em] mb-1.5 px-1">
                       Password
                     </label>
                     <div className="relative group">
@@ -382,13 +388,13 @@ function LoginForm() {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         placeholder="Enter your password"
-                        className="w-full bg-background/50 border border-primary/20 rounded-lg h-12 px-4 pr-10 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 input-glow input-gold-sweep transition-all caret-primary"
+                        className="w-full bg-background/70 border border-border rounded-lg h-12 px-4 pr-10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary input-glow input-gold-sweep transition-all caret-primary"
                         disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPwd(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 hover:text-primary/60 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/70 hover:text-primary transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -423,14 +429,14 @@ function LoginForm() {
                 >
                   <button
                     disabled
-                    className="login-compact-hide w-full bg-muted/30 text-muted-foreground/50 font-medium py-2.5 rounded-lg border border-border/50 cursor-not-allowed text-xs tracking-wide"
+                    className="login-compact-hide w-full bg-muted/60 text-muted-foreground font-medium py-2.5 rounded-lg border border-border cursor-not-allowed text-xs tracking-wide"
                   >
                     Single Sign-On (Coming Soon)
                   </button>
 
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-px bg-primary/10" />
-                    <span className="text-[9px] text-primary/30 uppercase tracking-[0.2em] font-semibold">or</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-[0.18em] font-semibold">or</span>
                     <div className="flex-1 h-px bg-primary/10" />
                   </div>
 
@@ -443,7 +449,7 @@ function LoginForm() {
                     <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
                     <Sparkles className="w-4 h-4 text-primary/70" />
                     <span>Explore Live Demo</span>
-                    <span className="text-[9px] text-primary/50 uppercase tracking-widest font-bold ml-1">
+                    <span className="text-[10px] text-primary uppercase tracking-widest font-bold ml-1">
                       — No Account Needed
                     </span>
                   </motion.button>
@@ -456,11 +462,11 @@ function LoginForm() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
-                  <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.2em] font-semibold">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.16em] font-semibold">
                     Secure Woodcrest Workspace
                   </p>
                   {/* Mobile-only footer (desktop shows it in the left panel) */}
-                  <p className="lg:hidden mt-2 text-[9px] text-muted-foreground/30 uppercase tracking-[0.15em]">
+                  <p className="lg:hidden mt-2 text-[10px] text-muted-foreground uppercase tracking-[0.12em]">
                     Woodcrest Capital · Group 13 · UNT Capstone 2026
                   </p>
                 </motion.div>

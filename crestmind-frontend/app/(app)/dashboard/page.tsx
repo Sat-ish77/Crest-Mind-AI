@@ -285,9 +285,9 @@ export default function DashboardPage() {
             transition={{ delay: 0.8 }}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-primary/15 bg-primary/5"
           >
-            <Info className="w-4 h-4 text-primary/50 shrink-0" />
-            <p className="text-xs text-primary/60">
-              <span className="font-semibold text-primary/80">Demo tip:</span> Hover over any card, stat, or button to learn what it does and what powers it.
+            <Info className="w-4 h-4 text-primary shrink-0" />
+            <p className="text-sm text-foreground">
+              <span className="font-semibold text-primary">Demo tip:</span> Use the descriptions in the sidebar, then hover over a card for the technical details behind it.
             </p>
           </motion.div>
         )}
@@ -476,7 +476,7 @@ export default function DashboardPage() {
                         <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors duration-300">
                           {card.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground/70 leading-relaxed mb-5">
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-5">
                           {card.description}
                         </p>
                         <div className="flex items-center gap-2 text-sm text-primary font-medium">
@@ -516,10 +516,10 @@ export default function DashboardPage() {
                     transition={{ delay: 0.4 + index * 0.1 }}
                   >
                     <div className="flex items-center gap-3">
-                      <MessageSquare className="w-4 h-4 text-primary/60 shrink-0" />
-                      <span className="text-sm text-muted-foreground/80">{item.question}</span>
+                      <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-sm text-muted-foreground">{item.question}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground/40 shrink-0 ml-4">{item.time}</span>
+                    <span className="text-xs text-muted-foreground shrink-0 ml-4">{item.time}</span>
                   </motion.div>
                 </DemoTooltip>
               ))}
@@ -590,7 +590,7 @@ export default function DashboardPage() {
                     </motion.div>
                     <div>
                       <h3 className="font-semibold mb-2 text-foreground/90">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground/70 leading-relaxed">{item.description}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
                     </div>
                   </div>
                   {item.step < 3 && (

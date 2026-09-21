@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="w-8 h-8 rounded-full border-2 border-transparent border-t-primary" />
             </motion.div>
           </div>
-          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.2em]">Loading</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.16em]">Loading</p>
         </motion.div>
       </div>
     )

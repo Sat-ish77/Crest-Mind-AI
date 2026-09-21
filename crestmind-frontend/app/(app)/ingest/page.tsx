@@ -47,7 +47,7 @@ function PipelineVisualization({ currentStep }: { currentStep: IngestStep }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-bold text-primary uppercase tracking-[0.1em]">Processing</span>
-        <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
           Step {currentIndex + 1} of {steps.length}
         </span>
       </div>
@@ -119,7 +119,7 @@ function PipelineVisualization({ currentStep }: { currentStep: IngestStep }) {
                 </p>
                 {isCurrent && (
                   <motion.p 
-                    className="text-[10px] text-muted-foreground/60 mt-1"
+                    className="text-[10px] text-muted-foreground mt-1"
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
@@ -302,7 +302,7 @@ export default function IngestPage() {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-3xl lg:text-4xl font-serif text-foreground">Upload Document</h1>
-          <p className="text-muted-foreground/70 text-sm tracking-wide">
+          <p className="text-muted-foreground text-sm tracking-wide">
             Add trusted property files so CrestMind can answer with reliable sources
           </p>
         </motion.header>
@@ -314,12 +314,12 @@ export default function IngestPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-4 bg-primary/5 border border-primary/20 rounded-xl px-6 py-4"
           >
-            <Lock className="w-5 h-5 text-primary/60 shrink-0" />
+            <Lock className="w-5 h-5 text-primary shrink-0" />
             <div>
               <p className="text-sm font-semibold text-primary">
                 ✦ Demo Mode — Document upload is disabled
               </p>
-              <p className="text-xs text-muted-foreground/70 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 5 real Woodcrest Capital documents are pre-loaded below. Sign in with credentials to upload your own documents.
               </p>
             </div>
@@ -372,7 +372,7 @@ export default function IngestPage() {
                     </motion.div>
                     <div className="text-center">
                       <p className="font-semibold text-foreground">{file.name}</p>
-                      <p className="text-sm text-muted-foreground/60">
+                      <p className="text-sm text-muted-foreground">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -406,7 +406,7 @@ export default function IngestPage() {
                     </motion.div>
                     <div className="text-center">
                       <p className="text-xl font-serif text-foreground/80">Drop files here</p>
-                      <p className="text-sm text-muted-foreground/50 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         Supports PDF, DOCX, and TXT (Max 50MB)
                       </p>
                     </div>
@@ -431,7 +431,7 @@ export default function IngestPage() {
             >
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-1">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1">
                     Property Name <span className="text-destructive">*</span>
                   </label>
                   <input
@@ -439,13 +439,13 @@ export default function IngestPage() {
                     value={propertyName}
                     onChange={(e) => setPropertyName(e.target.value)}
                     placeholder="e.g. Westfield Shopping Center"
-                    className="w-full glass-card rounded-lg h-14 px-4 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all placeholder:text-muted-foreground/30 caret-primary"
+                    className="w-full glass-card rounded-lg h-14 px-4 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all placeholder:text-muted-foreground caret-primary"
                     disabled={isIngesting}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                     Document Type
                   </label>
                   <select
@@ -543,13 +543,13 @@ export default function IngestPage() {
                 Document Library
               </h2>
               {demo && (
-                <span className="text-[9px] font-bold uppercase tracking-widest text-primary/50 border border-primary/20 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary border border-primary/30 px-2 py-0.5 rounded">
                   Demo Data
                 </span>
               )}
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
@@ -568,7 +568,7 @@ export default function IngestPage() {
             ) : filteredDocuments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <AlertCircle className="w-12 h-12 text-muted-foreground/20 mb-4" />
-                <p className="text-muted-foreground/60 text-sm">
+                <p className="text-muted-foreground text-sm">
                   {searchQuery ? 'No documents match your search' : 'No documents uploaded yet'}
                 </p>
               </div>
@@ -577,10 +577,10 @@ export default function IngestPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-primary/5">
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Document Name</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Type</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Uploaded</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 text-right">Actions</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Document Name</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Type</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Uploaded</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
@@ -606,7 +606,7 @@ export default function IngestPage() {
                             {doc.doc_type}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-muted-foreground/70 text-sm">
+                        <td className="px-6 py-4 text-muted-foreground text-sm">
                           {formatCreatedAtRelative(doc.created_at)}
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -651,7 +651,7 @@ export default function IngestPage() {
             <div className="flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground/60">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
               </div>
               <motion.button
                 onClick={handleIngest}

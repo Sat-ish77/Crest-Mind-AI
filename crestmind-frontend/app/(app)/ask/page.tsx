@@ -92,10 +92,10 @@ function SourceCard({ source, index }: { source: Source; index: number }) {
         className="w-full flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 transition-all duration-300"
       >
         <div className="flex items-center gap-3">
-          <FileText className="w-4 h-4 text-primary/60" />
+          <FileText className="w-4 h-4 text-primary" />
           <div className="text-left">
             <p className="text-sm font-semibold">{source.doc_name}</p>
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.1em]">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em]">
               Page {source.page_number} | {source.section}
             </p>
           </div>
@@ -432,7 +432,7 @@ function AnswerFeedback({ response, query }: { response: AskResponse; query: str
   if (submitted) {
     return (
       <motion.div
-        className="flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60"
+        className="flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -453,7 +453,7 @@ function AnswerFeedback({ response, query }: { response: AskResponse; query: str
       transition={{ delay: 0.3 }}
     >
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mr-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mr-1">
           Is this answer correct?
         </p>
 
@@ -494,7 +494,7 @@ function AnswerFeedback({ response, query }: { response: AskResponse; query: str
               onChange={(e) => setNote(e.target.value)}
               placeholder="What is wrong with this answer? (optional — e.g. wrong date, wrong dollar amount, wrong property)"
               rows={3}
-              className="w-full glass-card rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30 transition-all placeholder:text-muted-foreground/30 resize-none"
+              className="w-full glass-card rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30 transition-all placeholder:text-muted-foreground resize-none"
               disabled={isSending}
             />
             <motion.button
@@ -611,7 +611,7 @@ export default function AskPage() {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-3xl lg:text-4xl font-serif text-foreground">Ask a Question</h1>
-          <p className="text-muted-foreground/70 text-sm tracking-wide">
+          <p className="text-muted-foreground text-sm tracking-wide">
             {demo
               ? 'Explore real Woodcrest Capital property documents powered by RAG'
               : 'Query your property documents using natural language'}
@@ -624,7 +624,7 @@ export default function AskPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mb-4 px-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4 px-1">
             {demo ? '✦ Click a Question to Try the RAG Pipeline' : 'Common Inquiries'}
           </p>
           <div className={cn(
@@ -674,14 +674,14 @@ export default function AskPage() {
           <div className="relative">
             {demo ? (
               <div className="relative">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/30" />
-                <div className="w-full glass-card rounded-xl py-5 pl-14 pr-6 text-lg text-muted-foreground/30 border border-primary/10 cursor-not-allowed select-none">
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/70" />
+                <div className="w-full glass-card rounded-xl py-5 pl-14 pr-6 text-lg text-muted-foreground border border-primary/20 cursor-not-allowed select-none">
                   Use the questions above to explore the demo
                 </div>
               </div>
             ) : (
               <>
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/50" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/80" />
                 <input
                   type="text"
                   value={query}
@@ -690,7 +690,7 @@ export default function AskPage() {
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   placeholder={placeholderQuestions[placeholderIndex]}
-                  className="w-full glass-card rounded-xl py-5 pl-14 pr-6 text-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all duration-300 placeholder:text-muted-foreground/30 caret-primary"
+                  className="w-full glass-card rounded-xl py-5 pl-14 pr-6 text-lg focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all duration-300 placeholder:text-muted-foreground caret-primary"
                   disabled={isLoading}
                 />
                 <motion.div
@@ -781,7 +781,7 @@ export default function AskPage() {
               <div className="flex items-center justify-between px-1">
                 <ConfidenceBadge confidence={response.overall_confidence} />
                 <motion.span
-                  className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.1em]"
+                  className="text-[10px] text-muted-foreground uppercase tracking-[0.1em]"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -819,7 +819,7 @@ export default function AskPage() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">
                     Source Citations ({deduplicatedSources.length})
                   </p>
                   <div className="space-y-3">
@@ -876,7 +876,7 @@ export default function AskPage() {
             <h3 className="text-lg font-serif text-foreground/80 mb-2">
               {demo ? 'Click a question above to see it in action' : 'Ready to Search'}
             </h3>
-            <p className="text-sm text-muted-foreground/60 max-w-md leading-relaxed">
+            <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
               {demo
                 ? 'Each question runs a live RAG pipeline — vector search + keyword search merged with RRF, answered by GPT-4o-mini with source citations.'
                 : 'Enter your question above or select a common inquiry. Our AI will analyze your property documents and provide accurate answers with source citations.'}

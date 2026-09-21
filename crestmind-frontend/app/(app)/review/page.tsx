@@ -54,13 +54,13 @@ function LogCard({ log, index }: { log: AuditLog; index: number }) {
               {log.action}
             </span>
             {log.overall_confidence && (
-              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                 {log.overall_confidence} confidence
               </span>
             )}
           </div>
           <p className="text-sm font-medium text-foreground truncate">{log.query}</p>
-          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.1em]">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em]">
             {log.username || 'unknown user'} &nbsp;|&nbsp; {formatTimestamp(log.created_at)}
           </p>
         </div>
@@ -86,7 +86,7 @@ function LogCard({ log, index }: { log: AuditLog; index: number }) {
               )}
 
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mb-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
                   Answer as shown
                 </p>
                 <pre className="font-mono text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap bg-muted/30 rounded-lg p-4 border border-border/30">
@@ -96,7 +96,7 @@ function LogCard({ log, index }: { log: AuditLog; index: number }) {
 
               {log.sources?.length > 0 && (
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mb-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
                     Sources cited ({log.sources.length})
                   </p>
                   <div className="space-y-1.5">
@@ -145,7 +145,7 @@ export default function ReviewPage() {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-3xl lg:text-4xl font-serif text-foreground">Answer Review</h1>
-          <p className="text-muted-foreground/70 text-sm tracking-wide">
+          <p className="text-muted-foreground text-sm tracking-wide">
             Every answer a person verified or flagged, newest first.
           </p>
         </motion.header>
@@ -159,7 +159,7 @@ export default function ReviewPage() {
                 'px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all button-press border',
                 filter === f.value
                   ? 'bg-primary/15 border-primary/40 text-primary'
-                  : 'glass-card border-border/50 text-muted-foreground/70 hover:border-primary/30'
+                  : 'glass-card border-border text-muted-foreground hover:border-primary/50'
               )}
             >
               {f.label}
@@ -194,7 +194,7 @@ export default function ReviewPage() {
               <Inbox className="w-10 h-10 text-primary/30" />
             </div>
             <h3 className="text-lg font-serif text-foreground/80 mb-2">Nothing recorded yet</h3>
-            <p className="text-sm text-muted-foreground/60 max-w-md leading-relaxed">
+            <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
               When someone verifies or flags an answer on the Ask page, it shows up here
               with the sources it cited.
             </p>
