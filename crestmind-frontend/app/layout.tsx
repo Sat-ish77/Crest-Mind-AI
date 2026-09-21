@@ -56,24 +56,22 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
-          themes={["dark", "light", "green", "midnight"]}
+          themes={["light", "midnight"]}
           storageKey="crestmind-theme"
           disableTransitionOnChange={false}
         >
           {children}
-          <Toaster 
-            position="top-right" 
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
             toastOptions={{
-              style: {
-                background: 'rgba(20, 18, 16, 0.9)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(201, 168, 76, 0.15)',
-                color: '#f0ead8',
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
-              },
               classNames: {
-                success: 'border-success/30',
-                error: 'border-destructive/30',
+                toast: 'crestmind-toast',
+                success: 'crestmind-toast-success',
+                error: 'crestmind-toast-error',
+                warning: 'crestmind-toast-warning',
+                info: 'crestmind-toast-info',
               },
             }}
           />

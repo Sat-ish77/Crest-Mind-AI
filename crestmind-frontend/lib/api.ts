@@ -55,6 +55,38 @@ export interface DeleteResponse {
   doc_name: string
 }
 
+// ── HITL feedback (CR-CAP2-001) ──
+export interface FeedbackRequest {
+  query: string
+  answer: string
+  action: 'verified' | 'flagged'
+  overall_confidence?: string
+  sources?: Source[]
+  username?: string
+  note?: string
+}
+
+export interface FeedbackResponse {
+  success: boolean
+  id: string | null
+}
+
+export interface AuditLog {
+  id: string
+  created_at: string
+  username: string | null
+  query: string
+  answer: string
+  overall_confidence: string | null
+  sources: Source[]
+  action: 'verified' | 'flagged'
+  note: string | null
+}
+
+export interface FeedbackListResponse {
+  logs: AuditLog[]
+}
+
 // ─────────────────────────────────────────
 // DEMO MODE HELPERS
 // ─────────────────────────────────────────
@@ -248,5 +280,29 @@ export async function deleteDocument(docName: string): Promise<DeleteResponse> {
     return { success: true, doc_name: docName }
   }
   const response = await api.delete<DeleteResponse>(`/documents/${encodeURIComponent(docName)}`)
+  return response.data
+}
+
+export async function submitFeedback(request: FeedbackRequest): Promise<FeedbackResponse> {
+  // Demo answers are fabricated. Never let them into the audit trail —
+  // the whole point of this table is that its rows are trustworthy.
+  if (isDemoMode()) {
+    await sleep(400)
+    return { success: true, id: null }
+  }
+  const response = await api.post<FeedbackResponse>('/feedback', request)
+  return response.data
+}
+
+export async function getFeedback(
+  action?: 'verified' | 'flagged'
+): Promise<FeedbackListResponse> {
+  if (isDemoMode()) {
+    await sleep(500)
+    return { logs: [] }
+  }
+  const response = await api.get<FeedbackListResponse>('/feedback', {
+    params: action ? { action } : undefined,
+  })
   return response.data
 }

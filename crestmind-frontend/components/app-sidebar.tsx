@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, MessageSquare, Upload, FolderOpen, LogOut, FlaskConical, Info } from 'lucide-react'
+import { Home, MessageSquare, Upload, FolderOpen, LogOut, FlaskConical, Info, ShieldCheck, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/lib/auth-context'
@@ -85,52 +85,32 @@ function SidebarTooltip({ title, description, tech, children }: SidebarTooltipPr
 }
 
 // ── THEME TOGGLE ──
-const themes = [
-  { key: 'dark',  label: 'Obsidian', color: '#c9a84c', bg: '#0a0805' },
-  { key: 'light', label: 'Light',    color: '#4f46e5', bg: '#ffffff' },
-  { key: 'green', label: 'Forest',   color: '#34d399', bg: '#061a0a' },
-]
-
 function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const isDark = theme === 'midnight'
 
   return (
-    <div className="flex items-center gap-2 px-1">
+    <div className="flex items-center gap-3 px-1">
       <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40 flex-1">
-        Theme
+        Appearance
       </span>
-      <div className="flex items-center gap-1.5">
-        {themes.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => {
-              if (t.key === 'light') {
-                setTheme(theme === 'light' ? 'midnight' : 'light')
-                return
-              }
-              setTheme(t.key)
-            }}
-            title={t.label}
-            className={cn(
-              'relative w-5 h-5 rounded-full border-2 transition-all duration-200 overflow-hidden',
-              theme === t.key
-                ? 'border-foreground/60 scale-110'
-                : 'border-transparent opacity-50 hover:opacity-80 hover:scale-105'
-            )}
-            style={{
-              background: t.key === 'light' ? undefined : t.bg,
-              boxShadow: `0 0 0 1px ${t.color}40`,
-            }}
-          >
-            {t.key === 'light' && (
-              <>
-                <span className="absolute inset-y-0 left-0 w-1/2 bg-white" />
-                <span className="absolute inset-y-0 right-0 w-1/2 bg-[#0b0f14]" />
-                <span className="absolute top-[3px] bottom-[3px] left-1/2 w-px -translate-x-1/2 bg-black/25" />
-              </>
-            )}
-          </button>
-        ))}
+      <div className="flex items-center rounded-full border border-border/70 bg-background/45 p-1">
+        <button
+          onClick={() => setTheme('light')}
+          title="Light appearance"
+          aria-label="Use light appearance"
+          className={cn('theme-mode-button', !isDark && 'theme-mode-button-active')}
+        >
+          <Sun className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => setTheme('midnight')}
+          title="Dark appearance"
+          aria-label="Use dark appearance"
+          className={cn('theme-mode-button', isDark && 'theme-mode-button-active')}
+        >
+          <Moon className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   )
@@ -143,7 +123,7 @@ const navItems = [
     icon: Home,
     tooltip: {
       title: 'DASHBOARD',
-      description: 'Overview of your knowledge base — document count, total chunks, and query stats.',
+      description: 'A property-manager overview of your document library, coverage, recent activity, and workspace status.',
       tech: 'Next.js 16 + Tailwind + shadcn/ui',
     },
   },
@@ -159,12 +139,22 @@ const navItems = [
   },
   {
     href: '/ingest',
-    label: 'Upload Documents',
+    label: 'Document Library',
     icon: Upload,
     tooltip: {
-      title: 'DOCUMENT PIPELINE',
-      description: 'Upload PDFs or DOCX files. System parses, chunks, embeds, and stores them as searchable vectors.',
-      tech: 'PyMuPDF + OpenAI Embeddings + Supabase',
+      title: 'DOCUMENT LIBRARY',
+      description: 'Add and manage the trusted property files CrestMind is allowed to search when answering questions.',
+      tech: 'Secure document processing and hybrid retrieval',
+    },
+  },
+  {
+    href: '/review',
+    label: 'Answer Review',
+    icon: ShieldCheck,
+    tooltip: {
+      title: 'HUMAN-IN-THE-LOOP AUDIT',
+      description: 'Every answer a person verified or flagged, with the sources it cited at the time.',
+      tech: 'FastAPI + Supabase audit_logs',
     },
   },
 ]
@@ -206,8 +196,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       <div className="p-6">
         <SidebarTooltip
           title="TECH STACK"
-          description="Next.js 16 frontend on Vercel. FastAPI backend on GCP Cloud Run. Supabase PostgreSQL + pgvector. Built for Woodcrest Capital — UNT Capstone 2026."
-          tech="Next.js + FastAPI + GCP + Supabase"
+          description="Next.js 16 frontend and FastAPI services prepared for Woodcrest Capital's GCP environment, with PostgreSQL vector search for grounded answers."
+          tech="Next.js + FastAPI + GCP + PostgreSQL"
         >
           <Link href="/dashboard" className="flex items-center gap-3" onClick={handleNavigation}>
             <motion.div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card logo-breathe">
@@ -288,15 +278,15 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           )
         })}
 
-        {/* Knowledge Base */}
+        {/* Document Library */}
         <div className="pt-8">
           <SidebarTooltip
-            title="VECTOR DATABASE"
-            description="113 semantic chunks stored across 5 Woodcrest Capital documents. Each chunk has a 1,536-dim vector + tsvector for hybrid search."
-            tech="Supabase PostgreSQL + pgvector extension"
+            title="DOCUMENT LIBRARY"
+            description="The approved Woodcrest property files CrestMind searches to produce source-backed answers."
+            tech="Secure searchable document index"
           >
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 px-3 mb-3">
-              Knowledge Base
+              Document Library
             </p>
           </SidebarTooltip>
           <div className="space-y-1 max-h-64 overflow-y-auto">
@@ -344,7 +334,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate text-foreground/90">{user?.username || 'User'}</p>
-              <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.1em]">Woodcrest Capital</p>
+               <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.1em]">Property Manager · Woodcrest</p>
             </div>
           </div>
         )}
