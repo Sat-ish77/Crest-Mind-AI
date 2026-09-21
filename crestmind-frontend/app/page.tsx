@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Eye, EyeOff, Lock, User, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, Sparkles, Building2, ShieldCheck, FileSearch, AlertCircle, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/lib/auth-context'
@@ -67,114 +67,6 @@ function ParticleField({ count = 50 }: { count?: number }) {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
 }
 
-// ── 3D FLOATING WIREFRAME SHAPES ──
-const SHAPES = [
-  { id: 0, size: 55,  left: '12%', top: '14%', delay: 0,   dur: 9,  ry: 45  },
-  { id: 1, size: 35,  left: '78%', top: '18%', delay: 1.8, dur: 11, ry: -30 },
-  { id: 2, size: 70,  left: '68%', top: '62%', delay: 0.6, dur: 13, ry: 60  },
-  { id: 3, size: 30,  left: '18%', top: '72%', delay: 2.4, dur: 8,  ry: -45 },
-  { id: 4, size: 45,  left: '42%', top: '38%', delay: 1.2, dur: 10, ry: 30  },
-  { id: 5, size: 28,  left: '85%', top: '50%', delay: 3.0, dur: 7,  ry: -60 },
-]
-
-/** Fewer, smaller diamonds beside the login card (desktop) — theme `primary` border */
-const SHAPES_SIDEBAR: {
-  id: string
-  size: number
-  left?: string
-  right?: string
-  top?: string
-  bottom?: string
-  delay: number
-  dur: number
-  ry: number
-}[] = [
-  { id: 'sb0', size: 26, left: '5%', top: '18%', delay: 0, dur: 11, ry: 38 },
-  { id: 'sb1', size: 20, right: '7%', top: '24%', delay: 1.4, dur: 10, ry: -32 },
-  { id: 'sb2', size: 24, left: '9%', bottom: '22%', delay: 0.7, dur: 12, ry: 48 },
-]
-
-function FloatingShapesSidebar() {
-  return (
-    <div
-      className="hidden lg:block absolute inset-0 pointer-events-none z-[15]"
-      style={{ perspective: '900px' }}
-      aria-hidden
-    >
-      {SHAPES_SIDEBAR.map(s => (
-        <motion.div
-          key={s.id}
-          className="absolute"
-          style={{
-            ...(s.left != null ? { left: s.left } : {}),
-            ...(s.right != null ? { right: s.right } : {}),
-            ...(s.top != null ? { top: s.top } : {}),
-            ...(s.bottom != null ? { bottom: s.bottom } : {}),
-          }}
-          animate={{ y: [0, -10, 0], rotateY: [0, s.ry, 0], rotateX: [0, 10, 0] }}
-          transition={{ duration: s.dur, delay: s.delay, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div
-            className="border border-primary/25 shadow-[0_0_10px_rgba(79,70,229,0.08)]"
-            style={{
-              width: s.size,
-              height: s.size,
-              transform: 'rotate(45deg)',
-            }}
-          />
-          <div
-            className="border border-primary/15 absolute top-1/4 left-1/4"
-            style={{
-              width: s.size * 0.5,
-              height: s.size * 0.5,
-              transform: 'rotate(45deg)',
-            }}
-          />
-        </motion.div>
-      ))}
-    </div>
-  )
-}
-
-function FloatingShapes() {
-  return (
-    <div className="absolute inset-0 pointer-events-none z-20" style={{ perspective: '900px' }}>
-      {SHAPES.map(s => (
-        <motion.div
-          key={s.id}
-          className="absolute"
-          style={{ left: s.left, top: s.top }}
-          animate={{ y: [0, -18, 0], rotateY: [0, s.ry, 0], rotateX: [0, 15, 0] }}
-          transition={{ duration: s.dur, delay: s.delay, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          {/* Outer diamond */}
-          <div
-            style={{
-              width: s.size,
-              height: s.size,
-              border: '1px solid rgba(201,168,76,0.35)',
-              transform: 'rotate(45deg)',
-              boxShadow: '0 0 12px rgba(201,168,76,0.12), inset 0 0 8px rgba(201,168,76,0.06)',
-            }}
-          />
-          {/* Inner diamond */}
-          <div
-            style={{
-              width: s.size * 0.5,
-              height: s.size * 0.5,
-              border: '1px solid rgba(201,168,76,0.2)',
-              transform: 'rotate(45deg)',
-              position: 'absolute',
-              top: '25%',
-              left: '25%',
-            }}
-          />
-        </motion.div>
-      ))}
-    </div>
-  )
-}
-
 // ── ANIMATED GOLD RING AROUND LOGO ──
 function LogoRing() {
   return (
@@ -220,9 +112,6 @@ function LeftPanel() {
       {/* Particles on top */}
       <ParticleField count={40} />
 
-      {/* 3D shapes */}
-      <FloatingShapes />
-
       {/* Readability scrim behind copy */}
       <div
         className="absolute bottom-0 left-0 right-0 h-[min(52%,420px)] bg-gradient-to-t from-black/70 via-black/35 to-transparent pointer-events-none z-[25]"
@@ -248,6 +137,18 @@ function LeftPanel() {
           Ask any question about your leases, amendments, and property documents — get instant, cited answers.
         </p>
 
+        <div className="mt-6 flex flex-wrap gap-2 max-w-lg">
+          {[
+            { icon: FileSearch, label: 'Source-backed answers' },
+            { icon: ShieldCheck, label: 'Human review ready' },
+            { icon: Building2, label: 'Built for property teams' },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="login-proof-chip">
+              <Icon className="w-3.5 h-3.5" /> {label}
+            </div>
+          ))}
+        </div>
+
         {/* Footer */}
         <p className="mt-6 text-[9px] text-white/50 uppercase tracking-[0.2em] [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]">
           UNT Capstone 2026 · Group 13
@@ -265,6 +166,7 @@ function LoginForm() {
   const [isLoading, setIsLoading]   = useState(false)
   const [isShaking, setIsShaking]   = useState(false)
   const [isSuccess, setIsSuccess]   = useState(false)
+  const [formError, setFormError]   = useState('')
   const { setTheme } = useTheme()
   const { login, user, isLoading: authLoading } = useAuth()
   const router = useRouter()
@@ -282,8 +184,10 @@ function LoginForm() {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError('')
     if (!username.trim() || !password.trim()) {
-      toast.error('Please enter both username and password')
+      setFormError('Enter your property manager name and password to continue.')
+      toast.error('Please complete both fields')
       shake(); return
     }
     setIsLoading(true)
@@ -294,10 +198,12 @@ function LoginForm() {
         toast.success('Welcome to CrestMind AI')
         setTimeout(() => router.push('/dashboard'), 600)
       } else {
-        toast.error('Invalid credentials'); shake()
+        setFormError('We could not verify those credentials. Check the password and try again.')
+        toast.error('Sign-in failed'); shake()
       }
     } catch {
-      toast.error('An error occurred'); shake()
+      setFormError('CrestMind could not connect right now. Please try again.')
+      toast.error('Connection error'); shake()
     } finally {
       setIsLoading(false)
     }
@@ -325,16 +231,13 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-dvh lg:h-dvh lg:overflow-hidden flex bg-background">
 
       {/* ── LEFT: Building panel (desktop only) ── */}
       <LeftPanel />
 
       {/* ── RIGHT: Login form ── */}
-      <div className="login-form-panel flex-1 flex flex-col items-center justify-center relative overflow-hidden px-6 py-12 lg:px-12">
-
-        {/* Desktop: subtle diamonds flanking the card (not on the building side) */}
-        <FloatingShapesSidebar />
+      <div className="login-form-panel flex-1 flex flex-col items-center justify-center relative overflow-hidden px-5 py-6 lg:px-10 lg:py-4">
 
         {/* Mobile-only particle field + decorations */}
         <div className="lg:hidden absolute inset-0">
@@ -366,22 +269,28 @@ function LoginForm() {
               exit={{ opacity: 0, y: -40, scale: 0.96 }}
               transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
             >
-              {/* Subtle gold glow behind card */}
-              <div className="absolute -inset-6 bg-primary/4 blur-3xl rounded-full" />
+              {/* Dimensional glow + orbit behind the workspace card */}
+              <div className="absolute -inset-10 login-aurora blur-3xl rounded-full" />
+              <motion.div
+                className="login-orbit hidden sm:block"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
+                aria-hidden
+              />
 
               <motion.div
-                className={`glass-card relative rounded-2xl p-8 lg:p-10 gold-glow ${isShaking ? 'shake' : ''}`}
+                className={`glass-card login-card-compact relative rounded-2xl p-6 lg:p-7 gold-glow ${isShaking ? 'shake' : ''}`}
                 animate={isShaking ? { x: [0, -4, 4, -4, 4, 0] } : {}}
                 transition={{ duration: 0.4 }}
               >
                 {/* Logo & Brand */}
                 <motion.div
-                  className="flex flex-col items-center mb-8 text-center"
+                  className="flex flex-col items-center mb-4 text-center"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
                 >
-                  <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden mb-4">
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden mb-2.5">
                     <LogoRing />
                     <Image
                       src="/images/logo.jpeg"
@@ -391,46 +300,72 @@ function LoginForm() {
                     />
                   </div>
                   <motion.h1
-                    className="font-serif text-3xl text-primary tracking-tight mb-1.5"
+                    className="font-serif text-2xl text-primary tracking-tight mb-1"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    CRESTMIND AI
+                    CrestMind AI
                   </motion.h1>
                   <motion.p
-                    className="text-[10px] font-semibold tracking-[0.3em] text-primary/60 uppercase"
+                    className="login-compact-hide text-[9px] font-semibold tracking-[0.26em] text-primary/60 uppercase"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
                   >
-                    Property Document Intelligence
+                    Property Intelligence Platform
                   </motion.p>
                 </motion.div>
 
+                <motion.div
+                  className="mb-4 text-center"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 mb-2">
+                    <Building2 className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Property Manager Portal</span>
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground">Sign in to your workspace</h2>
+                  <p className="login-compact-hide text-xs text-muted-foreground mt-1">Access property documents, cited answers, and review activity.</p>
+                </motion.div>
+
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
                   {/* Username */}
                   <motion.div
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.25 }}
                   >
-                    <label className="block text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mb-2 px-1">
-                      Username
+                    <label className="block text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mb-1.5 px-1">
+                      Property manager name
                     </label>
                     <div className="relative group">
                       <input
                         type="text"
                         value={username}
                         onChange={e => setUsername(e.target.value)}
-                        placeholder="Enter your username"
-                        className="w-full bg-background/50 border border-primary/20 rounded-lg h-14 px-4 pr-10 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 input-glow input-gold-sweep transition-all caret-primary"
+                        placeholder="Enter your name or username"
+                        className="w-full bg-background/50 border border-primary/20 rounded-lg h-12 px-4 pr-10 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 input-glow input-gold-sweep transition-all caret-primary"
                         disabled={isLoading}
                       />
                       <User className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30 group-focus-within:text-primary/60 transition-colors" />
                     </div>
                   </motion.div>
+
+                  {formError && (
+                    <motion.div
+                      role="alert"
+                      className="status-message status-message-error"
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{formError}</span>
+                    </motion.div>
+                  )}
 
                   {/* Password */}
                   <motion.div
@@ -438,7 +373,7 @@ function LoginForm() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.32 }}
                   >
-                    <label className="block text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mb-2 px-1">
+                    <label className="block text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mb-1.5 px-1">
                       Password
                     </label>
                     <div className="relative group">
@@ -447,7 +382,7 @@ function LoginForm() {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         placeholder="Enter your password"
-                        className="w-full bg-background/50 border border-primary/20 rounded-lg h-14 px-4 pr-10 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 input-glow input-gold-sweep transition-all caret-primary"
+                        className="w-full bg-background/50 border border-primary/20 rounded-lg h-12 px-4 pr-10 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 input-glow input-gold-sweep transition-all caret-primary"
                         disabled={isLoading}
                       />
                       <button
@@ -464,7 +399,7 @@ function LoginForm() {
                   <motion.button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-primary to-primary-electric hover:from-primary-electric hover:to-primary text-primary-foreground font-bold py-4 rounded-lg shadow-lg shadow-primary/20 transition-all uppercase tracking-[0.15em] text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 button-press button-shimmer"
+                    className="w-full bg-gradient-to-r from-primary to-primary-electric hover:from-primary-electric hover:to-primary text-primary-foreground font-bold py-3 rounded-lg shadow-lg shadow-primary/20 transition-all uppercase tracking-[0.13em] text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 button-press button-shimmer"
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -474,21 +409,21 @@ function LoginForm() {
                     {isLoading ? (
                       <><Spinner className="w-4 h-4" /><span>Authenticating</span></>
                     ) : (
-                      <><Lock className="w-4 h-4" /><span>Sign In</span></>
+                      <><Lock className="w-4 h-4" /><span>Sign in as Property Manager</span><ArrowRight className="w-4 h-4" /></>
                     )}
                   </motion.button>
                 </form>
 
                 {/* SSO + Demo */}
                 <motion.div
-                  className="mt-5 space-y-3"
+                  className="mt-3.5 space-y-2.5"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                 >
                   <button
                     disabled
-                    className="w-full bg-muted/30 text-muted-foreground/50 font-medium py-3 rounded-lg border border-border/50 cursor-not-allowed text-sm tracking-wide"
+                    className="login-compact-hide w-full bg-muted/30 text-muted-foreground/50 font-medium py-2.5 rounded-lg border border-border/50 cursor-not-allowed text-xs tracking-wide"
                   >
                     Single Sign-On (Coming Soon)
                   </button>
@@ -501,7 +436,7 @@ function LoginForm() {
 
                   <motion.button
                     onClick={handleDemoMode}
-                    className="relative w-full overflow-hidden bg-transparent text-primary font-semibold py-3 rounded-lg border border-primary/40 hover:border-primary/70 hover:bg-primary/5 text-sm tracking-wide transition-all flex items-center justify-center gap-2 group"
+                    className="relative w-full overflow-hidden bg-transparent text-primary font-semibold py-2.5 rounded-lg border border-primary/40 hover:border-primary/70 hover:bg-primary/5 text-xs tracking-wide transition-all flex items-center justify-center gap-2 group"
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -516,13 +451,13 @@ function LoginForm() {
 
                 {/* Footer note */}
                 <motion.div
-                  className="mt-7 pt-7 border-t border-primary/10 flex flex-col items-center"
+                  className="login-compact-hide mt-4 pt-4 border-t border-primary/10 flex flex-col items-center"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
                   <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.2em] font-semibold">
-                    Secure Archival Access
+                    Secure Woodcrest Workspace
                   </p>
                   {/* Mobile-only footer (desktop shows it in the left panel) */}
                   <p className="lg:hidden mt-2 text-[9px] text-muted-foreground/30 uppercase tracking-[0.15em]">
@@ -561,7 +496,7 @@ function LoginForm() {
                   />
                 </motion.svg>
               </motion.div>
-              <p className="text-primary font-serif text-xl">Welcome, {username}</p>
+              <p className="text-primary font-serif text-xl">Workspace ready, {username}</p>
             </motion.div>
           )}
         </AnimatePresence>

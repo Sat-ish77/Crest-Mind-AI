@@ -36,9 +36,9 @@ function getDocTypeBadgeClass(docType: string): string {
 // Animated pipeline visualization
 function PipelineVisualization({ currentStep }: { currentStep: IngestStep }) {
   const steps: { key: IngestStep; label: string; description: string; icon: React.ElementType }[] = [
-    { key: 'reading', label: 'Reading', description: 'Reading document...', icon: FileText },
-    { key: 'chunking', label: 'Chunking', description: 'Creating semantic chunks...', icon: FileStack },
-    { key: 'embedding', label: 'Embedding', description: 'Generating embeddings...', icon: Cpu },
+    { key: 'reading', label: 'Reading', description: 'Reading your document...', icon: FileText },
+    { key: 'chunking', label: 'Organizing', description: 'Organizing the information...', icon: FileStack },
+    { key: 'embedding', label: 'Making Searchable', description: 'Preparing it for questions...', icon: Cpu },
   ]
 
   const currentIndex = steps.findIndex((s) => s.key === currentStep)
@@ -160,7 +160,7 @@ function ConfettiBurst() {
   )
 }
 
-// ── DEMO MODE: static knowledge base ──
+// ── DEMO MODE: static document library ──
 const DEMO_DOCUMENTS: Document[] = [
   { doc_name: 'Ollies - Lease, 2010.docx',         doc_type: 'lease',      chunks: 28, created_at: '2025-03-10T14:22:00Z' },
   { doc_name: 'Ollies - Amend 1, 2015.docx',       doc_type: 'amendment',  chunks: 18, created_at: '2025-03-10T14:35:00Z' },
@@ -175,7 +175,7 @@ export default function IngestPage() {
   const [docType, setDocType] = useState('auto-detect')
   const [isIngesting, setIsIngesting] = useState(false)
   const [currentStep, setCurrentStep] = useState<IngestStep | null>(null)
-  const [lastIngestResult, setLastIngestResult] = useState<{ docName: string; chunks: number } | null>(null)
+  const [lastIngestResult, setLastIngestResult] = useState<{ docName: string } | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [deletingDoc, setDeletingDoc] = useState<string | null>(null)
@@ -249,7 +249,7 @@ export default function IngestPage() {
 
     try {
       const result = await ingestDocument(file, propertyName, docType)
-      setLastIngestResult({ docName: result.doc_name, chunks: result.chunks_stored })
+      setLastIngestResult({ docName: result.doc_name })
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 1000)
       toast.success(`Successfully uploaded ${result.doc_name}`)
@@ -303,7 +303,7 @@ export default function IngestPage() {
         >
           <h1 className="text-3xl lg:text-4xl font-serif text-foreground">Upload Document</h1>
           <p className="text-muted-foreground/70 text-sm tracking-wide">
-            Expand your knowledge base by uploading property documents
+            Add trusted property files so CrestMind can answer with reliable sources
           </p>
         </motion.header>
 
@@ -521,7 +521,7 @@ export default function IngestPage() {
               <div>
                 <p className="font-bold text-success">Upload Complete</p>
                 <p className="text-sm text-success/70">
-                  &quot;{lastIngestResult.docName}&quot; has been processed into {lastIngestResult.chunks} chunks.
+                  &quot;{lastIngestResult.docName}&quot; is now searchable and ready for questions.
                 </p>
               </div>
               <Sparkles className="absolute right-4 top-4 w-5 h-5 text-success/30" />
@@ -529,7 +529,7 @@ export default function IngestPage() {
           )}
         </AnimatePresence>
 
-        {/* Knowledge Base Table */}
+        {/* Document Library Table */}
         <motion.section 
           className="space-y-4"
           initial={{ opacity: 0, y: 20 }}
@@ -540,7 +540,7 @@ export default function IngestPage() {
             <div className="flex items-center gap-3">
               <Database className="w-5 h-5 text-primary" />
               <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                Knowledge Base
+                Document Library
               </h2>
               {demo && (
                 <span className="text-[9px] font-bold uppercase tracking-widest text-primary/50 border border-primary/20 px-2 py-0.5 rounded">
@@ -579,7 +579,6 @@ export default function IngestPage() {
                     <tr className="bg-primary/5">
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Document Name</th>
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Type</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Chunks</th>
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Uploaded</th>
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 text-right">Actions</th>
                     </tr>
@@ -607,7 +606,6 @@ export default function IngestPage() {
                             {doc.doc_type}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-muted-foreground/70 font-mono text-sm">{doc.chunks}</td>
                         <td className="px-6 py-4 text-muted-foreground/70 text-sm">
                           {formatCreatedAtRelative(doc.created_at)}
                         </td>

@@ -6,6 +6,7 @@ import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
 import { AppSidebar } from './app-sidebar'
+import { HelpGuide } from './help-guide'
 import { Spinner } from '@/components/ui/spinner'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 
@@ -64,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Background Effects */}
       <div className="fixed inset-0 dot-grid pointer-events-none z-0" />
       <div className="noise-texture" />
+      <HelpGuide />
       
       {/* Desktop Sidebar - Always visible on lg+ */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">

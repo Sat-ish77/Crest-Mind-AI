@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { MessageSquare, Upload, Database, FileText, Layers, Clock, ArrowRight, Search, Sparkles, Info } from 'lucide-react'
+import { MessageSquare, Database, FileText, ArrowRight, Search, Sparkles, Info, ShieldCheck, Building2, CalendarDays, FolderOpen, CircleCheck, ScanSearch } from 'lucide-react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
 import useSWR from 'swr'
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { formatCreatedAtRelative, createdAtToMs } from '@/lib/format-created-at'
 
 // ── DEMO STATIC DATA ──
-const DEMO_STATS = { documents: 5, chunks: 113, queries: 47 }
+const DEMO_STATS = { documents: 5, categories: 4, queries: 47 }
 const DEMO_ACTIVITY = [
   { question: 'How many renewal options does the tenant have?', time: '2 minutes ago' },
   { question: 'What is the base rent for the short term lease?', time: '1 hour ago' },
@@ -175,7 +175,7 @@ const featureCards = [
   },
   {
     title: 'Upload Documents',
-    description: 'Upload and process new documents to expand your knowledge base with automatic chunking and embedding.',
+    description: 'Add leases, amendments, invoices, and reports to your secure property library.',
     icon: FillingDocumentIcon,
     href: '/ingest',
     gradient: 'from-success/20 to-success/5',
@@ -186,14 +186,14 @@ const featureCards = [
     },
   },
   {
-    title: 'Explore Knowledge',
-    description: 'Browse your entire document library, search across all uploaded materials, and manage your data.',
+    title: 'Browse Library',
+    description: 'Review your document library by property and document type, with upload history at a glance.',
     icon: AssemblingGridIcon,
     href: '/ingest',
     gradient: 'from-gold-light/20 to-gold-light/5',
     tooltip: {
       title: 'VECTOR DATABASE',
-      description: 'Browse all 113 chunks stored across 5 property documents. Each chunk has a vector + full-text search index.',
+      description: 'Browse the source documents that power cited answers across the Woodcrest property portfolio.',
       tech: 'Supabase PostgreSQL + pgvector',
     },
   },
@@ -225,7 +225,6 @@ function StatPlaceholder() {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [displayName, setDisplayName] = useState('')
   const demo = isDemoMode()
 
   const { data: documentsData, isLoading } = useSWR(
@@ -240,42 +239,43 @@ export default function DashboardPage() {
 
   const documents = demo ? [] : (documentsData?.documents || [])
   const totalDocs   = demo ? DEMO_STATS.documents : documents.length
-  const totalChunks = demo ? DEMO_STATS.chunks    : documents.reduce((acc, doc) => acc + doc.chunks, 0)
+  const totalCategories = demo
+    ? DEMO_STATS.categories
+    : new Set(documents.map((doc) => doc.doc_type).filter(Boolean)).size
 
   // ── FIXED: spread to avoid mutation, dynamic timeAgo ──
   const lastUpload = documents.length > 0
     ? [...documents].sort((a, b) => createdAtToMs(b.created_at) - createdAtToMs(a.created_at))[0]
     : null
 
-  useEffect(() => {
-    const name = demo ? 'Demo User' : (user?.username || 'User')
-    let index = 0
-    setDisplayName('')
-    const interval = setInterval(() => {
-      if (index <= name.length) {
-        setDisplayName(name.slice(0, index))
-        index++
-      } else {
-        clearInterval(interval)
-      }
-    }, 80)
-    return () => clearInterval(interval)
-  }, [user?.username, demo])
-
   const { count: docCount,   ref: docRef   } = useAnimatedCounter(totalDocs)
-  const { count: chunkCount, ref: chunkRef } = useAnimatedCounter(totalChunks)
+  const { count: categoryCount, ref: categoryRef } = useAnimatedCounter(totalCategories)
   const { count: queryCount, ref: queryRef } = useAnimatedCounter(demo ? DEMO_STATS.queries : 0)
 
   const showLoading = !demo && isLoading
+  const displayName = demo ? 'Demo User' : (user?.username || 'Property Manager')
+  const firstName = displayName.trim().split(/\s+/)[0] || 'Property Manager'
+  const lastUploadText = demo
+    ? 'Updated 2 hours ago'
+    : lastUpload
+      ? `Last document ${formatCreatedAtRelative(lastUpload.created_at)}`
+      : 'No documents uploaded yet'
+  const currentDate = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date())
 
   return (
     <motion.div
-      className="min-h-screen p-6 lg:p-8"
+      className="min-h-screen p-5 sm:p-6 lg:p-8 relative overflow-hidden"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      <div className="max-w-6xl mx-auto space-y-10">
+      <div className="dashboard-orb dashboard-orb-one" aria-hidden />
+      <div className="dashboard-orb dashboard-orb-two" aria-hidden />
+      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
 
         {/* Demo hint banner */}
         {demo && (
@@ -292,130 +292,161 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Header */}
-        <motion.header className="space-y-3" variants={itemVariants}>
-          <h1 className="text-4xl lg:text-5xl font-serif">
-            <span className="text-muted-foreground/60 font-light">Welcome back,</span>{' '}
-            <span className="text-primary">
-              {displayName}
-              <span className="typewriter-cursor" />
-            </span>
-          </h1>
+        {/* Property manager command header */}
+        <motion.header className="dashboard-hero rounded-[28px] p-6 sm:p-8 lg:p-10 overflow-hidden" variants={itemVariants}>
+          <div className="dashboard-hero-grid" aria-hidden />
           <motion.div
-            className="h-0.5 w-0 bg-gradient-to-r from-primary to-transparent"
-            animate={{ width: displayName.length > 0 ? '120px' : '0px' }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            className="dashboard-hero-ring hidden sm:block"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
+            aria-hidden
           />
-          <p className="text-muted-foreground/80 text-sm tracking-wide">
-            Your property intelligence dashboard is ready for analysis.
-          </p>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+            <div className="max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <span className="role-pill"><Building2 className="w-3.5 h-3.5" /> Property Manager Workspace</span>
+                <span className="status-pill"><span className="status-pulse" /> Systems ready</span>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-primary" /> {currentDate}
+              </p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif tracking-tight leading-[1.02]">
+                Welcome back, <span className="text-primary">{firstName}</span>
+              </h1>
+              <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-xl leading-relaxed">
+                Your secure command center for leases, property records, and source-backed answers.
+              </p>
+            </div>
+            <Link href="/ask" className="shrink-0">
+              <motion.div
+                className="hero-cta group"
+                whileHover={{ y: -3, scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="hero-cta-icon"><ScanSearch className="w-5 h-5" /></div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] opacity-65">Start here</p>
+                  <p className="font-semibold">Ask about a property</p>
+                </div>
+                <ArrowRight className="w-4 h-4 ml-4 group-hover:translate-x-1 transition-transform" />
+              </motion.div>
+            </Link>
+          </div>
+          <div className="relative z-10 mt-8 flex flex-wrap gap-2">
+            {['Source-cited answers', 'Secure document library', 'Human-reviewed feedback'].map((label) => (
+              <span key={label} className="trust-chip"><CircleCheck className="w-3.5 h-3.5" /> {label}</span>
+            ))}
+          </div>
         </motion.header>
 
         {/* Stats Cards */}
         <motion.section className="grid grid-cols-1 md:grid-cols-3 gap-6" variants={containerVariants}>
 
-          {/* Documents */}
+          {/* Document library — includes last upload as requested */}
           <DemoTooltip
             title="DOCUMENT STORE"
-            description="Each document is parsed, split into semantic chunks, and stored with metadata: property name, doc type, section, and page number."
+            description="The complete searchable document library, with the most recent upload shown in the same card."
             tech="PyMuPDF + python-docx + Supabase"
             position="bottom"
           >
             <motion.div
               ref={docRef}
-              className="glass-card glass-card-hover rounded-xl p-6 animated-border"
+              className="metric-card metric-card-primary rounded-2xl p-6 animated-border"
               variants={itemVariants}
               whileHover={{ y: -4 }}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
+              <div className="flex items-start justify-between gap-3 mb-5">
+                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
-                  Documents Uploaded
-                </p>
+                <span className="metric-kicker">Document library</span>
               </div>
               {showLoading ? <StatPlaceholder /> : (
                 <p className="text-5xl font-serif text-primary tabular-nums">
                   {docCount.toLocaleString()}
                 </p>
               )}
+              <p className="mt-3 text-xs text-muted-foreground flex items-center gap-2">
+                <CalendarDays className="w-3.5 h-3.5 text-primary" /> {lastUploadText}
+              </p>
             </motion.div>
           </DemoTooltip>
 
-          {/* Chunks */}
+          {/* Business-friendly coverage metric */}
           <DemoTooltip
-            title="SEMANTIC CHUNKS"
-            description="Documents are split at natural section boundaries — not arbitrary character limits. Each chunk is ~1,000 chars with 150-char overlap so answers are never cut off mid-sentence."
-            tech="Custom Python semantic chunker"
+            title="DOCUMENT COVERAGE"
+            description="The number of business document categories currently represented in the library."
+            tech="Document metadata classification"
             position="bottom"
           >
             <motion.div
-              ref={chunkRef}
-              className="glass-card glass-card-hover rounded-xl p-6 animated-border"
+              ref={categoryRef}
+              className="metric-card metric-card-success rounded-2xl p-6 animated-border"
               variants={itemVariants}
               whileHover={{ y: -4 }}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Layers className="w-5 h-5 text-primary" />
+              <div className="flex items-start justify-between gap-3 mb-5">
+                <div className="w-11 h-11 rounded-xl bg-success/10 flex items-center justify-center">
+                  <FolderOpen className="w-5 h-5 text-success" />
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
-                  Total Chunks
-                </p>
+                <span className="metric-kicker">Document categories</span>
               </div>
               {showLoading ? <StatPlaceholder /> : (
-                <p className="text-5xl font-serif text-primary tabular-nums">
-                  {chunkCount.toLocaleString()}
+                <p className="text-5xl font-serif text-success tabular-nums">
+                  {categoryCount.toLocaleString()}
                 </p>
               )}
+              <p className="mt-3 text-xs text-muted-foreground">Leases, amendments, invoices, reports</p>
             </motion.div>
           </DemoTooltip>
 
-          {/* Queries / Last Upload */}
+          {/* Assistant readiness / demo usage */}
           <DemoTooltip
-            title={demo ? 'RAG PIPELINE' : 'LAST INGESTION'}
+            title="KNOWLEDGE ASSISTANT"
             description={demo
               ? 'Every query runs vector similarity search + BM25 keyword search simultaneously, merges results with RRF, then sends top chunks to GPT-4o-mini for a grounded answer.'
-              : 'Time since the last document was uploaded into the vector database.'
+              : 'Your document assistant is available and configured to return answers with source references.'
             }
             tech={demo ? 'pgvector + tsvector + RRF + GPT-4o-mini' : 'Supabase PostgreSQL'}
             position="bottom"
           >
             <motion.div
               ref={queryRef}
-              className="glass-card glass-card-hover rounded-xl p-6 animated-border"
+              className="metric-card metric-card-info rounded-2xl p-6 animated-border"
               variants={itemVariants}
               whileHover={{ y: -4 }}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-primary" />
+              <div className="flex items-start justify-between gap-3 mb-5">
+                <div className="w-11 h-11 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-sky-500" />
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
-                  {demo ? 'Queries Run' : 'Last Upload'}
-                </p>
+                <span className="metric-kicker">Assistant status</span>
               </div>
               {showLoading ? <StatPlaceholder /> : demo ? (
                 <p className="text-5xl font-serif text-primary tabular-nums">
                   {queryCount.toLocaleString()}
                 </p>
               ) : (
-                <p className="text-5xl font-serif text-primary">
-                  {lastUpload ? formatCreatedAtRelative(lastUpload.created_at) : '—'}
-                </p>
+                <p className="text-4xl font-serif text-sky-500">Ready</p>
               )}
+              <p className="mt-3 text-xs text-muted-foreground">
+                {demo ? 'Questions answered in this workspace' : 'Source citations and review enabled'}
+              </p>
             </motion.div>
           </DemoTooltip>
         </motion.section>
 
         {/* Feature Cards */}
         <motion.section variants={itemVariants}>
-          <div className="flex items-center gap-3 mb-6">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Quick Actions
-            </h2>
+          <div className="flex items-end justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2 text-primary mb-2">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Property operations</span>
+              </div>
+              <h2 className="text-2xl font-serif">What would you like to do?</h2>
+            </div>
+            <p className="hidden md:block text-xs text-muted-foreground">Designed for everyday property workflows</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featureCards.map((card, index) => {
@@ -435,11 +466,11 @@ export default function DashboardPage() {
                   >
                     <Link href={card.href}>
                       <motion.div
-                        className="glass-card rounded-xl p-6 h-full group animated-border cursor-pointer"
+                        className="action-card rounded-2xl p-6 h-full group cursor-pointer"
                         whileHover={{ y: -4, scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                       >
-                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-5`}>
+                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-5 action-card-icon`}>
                           <IconComponent />
                         </div>
                         <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors duration-300">
@@ -449,7 +480,7 @@ export default function DashboardPage() {
                           {card.description}
                         </p>
                         <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                          <span className="text-[11px] uppercase tracking-[0.1em]">Get Started</span>
+                          <span className="text-[11px] uppercase tracking-[0.1em]">Open workspace</span>
                           <motion.div className="inline-block" whileHover={{ x: 4 }} transition={{ type: 'spring', stiffness: 400 }}>
                             <ArrowRight className="w-4 h-4" />
                           </motion.div>
@@ -465,7 +496,7 @@ export default function DashboardPage() {
 
         {/* Demo Activity Feed / Real Recent Documents */}
         {demo ? (
-          <motion.section className="glass-card rounded-xl p-6" variants={itemVariants}>
+          <motion.section className="glass-card rounded-2xl p-6 lg:p-7" variants={itemVariants}>
             <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-muted-foreground mb-6">
               Recent Activity
             </h2>
@@ -474,7 +505,7 @@ export default function DashboardPage() {
                 <DemoTooltip
                   key={index}
                   title="QUERY HISTORY"
-                  description="Each of these ran the full RAG pipeline — embedded as a vector, searched across 113 chunks, answered by GPT-4o-mini with source citations."
+                  description="Each question was checked against the document library and answered with source citations."
                   tech="OpenAI text-embedding-3-small + RRF"
                   position="top"
                 >
@@ -495,7 +526,7 @@ export default function DashboardPage() {
             </div>
           </motion.section>
         ) : documents.length > 0 ? (
-          <motion.section className="glass-card rounded-xl p-6" variants={itemVariants}>
+          <motion.section className="glass-card rounded-2xl p-6 lg:p-7" variants={itemVariants}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-muted-foreground">
                 Recent Documents
@@ -521,9 +552,9 @@ export default function DashboardPage() {
                       <Database className="w-4 h-4 text-primary/60" />
                       <span className="text-sm font-medium truncate max-w-[200px]">{doc.doc_name}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{doc.chunks} chunks</span>
-                      <span className="text-primary/60">{formatCreatedAtRelative(doc.created_at)}</span>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="hidden sm:inline capitalize px-2 py-1 rounded-full bg-primary/8 text-primary">{doc.doc_type?.replaceAll('_', ' ') || 'Document'}</span>
+                      <span>{formatCreatedAtRelative(doc.created_at)}</span>
                     </div>
                   </motion.div>
                 ))}
@@ -533,14 +564,14 @@ export default function DashboardPage() {
 
         {/* Getting Started — only for real users with no docs */}
         {!demo && documents.length === 0 && !isLoading && (
-          <motion.section className="glass-card rounded-xl p-8" variants={itemVariants}>
+          <motion.section className="glass-card rounded-2xl p-8" variants={itemVariants}>
             <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-muted-foreground mb-8">
               Getting Started
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 { step: 1, title: 'Upload Your Documents', description: 'Start by ingesting your property documents such as leases, amendments, invoices, and inspection reports.' },
-                { step: 2, title: 'AI Processing', description: 'Our system automatically chunks, embeds, and indexes your documents for intelligent retrieval.' },
+                { step: 2, title: 'Secure Processing', description: 'CrestMind prepares each document for accurate search while preserving its source details.' },
                 { step: 3, title: 'Ask Anything', description: 'Query your knowledge base using natural language and receive accurate answers with source citations.' },
               ].map((item, index) => (
                 <motion.div
