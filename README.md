@@ -7,6 +7,52 @@ property documents and get cited, accurate answers instantly.
 
 ---
 
+## Open the current application
+
+Use [CrestMind AI on Vercel](https://v0-crestmind-frontend.vercel.app/).
+This is the property-manager frontend; it connects to FastAPI on GCP Cloud Run.
+No local installation is required to use the hosted system.
+
+If you already cloned this repository, run `python app.py` to open that same
+website in your browser. On a machine without a browser, the launcher prints
+the URL for you to copy. The old Streamlit interface has been removed from
+`main`; `streamlit run app.py` is no longer a supported startup command.
+
+### Develop the current frontend locally
+
+From the repository root:
+
+```powershell
+cd crestmind-frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:3000. Unless `NEXT_PUBLIC_API_URL` is overridden,
+this frontend connects to the existing GCP backend. Vercel and Cloud Run are
+hosting services; cloning the repository does not start either service locally.
+
+### Develop the backend locally (optional)
+
+From the repository root, install `requirements.txt` in your Python environment
+and configure the backend `.env` using `.env.example`. The backend needs
+Supabase credentials, an OpenAI embedding key, and Google Application Default
+Credentials authorized for the Vertex AI model used by this project.
+
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn api:app --reload --host 127.0.0.1 --port 8000
+```
+
+To use that local backend, set `NEXT_PUBLIC_API_URL=http://localhost:8000`
+in `crestmind-frontend/.env.local` and restart the Next.js development server.
+Allow `http://localhost:3000` in the backend's `CORS_ORIGINS` setting.
+Keep all secret API keys on the backend; only the API URL belongs in the frontend.
+
+See [the User Manual](user-manual.md) for property-manager instructions.
+
+---
+
 ## 💡 The Problem It Solves
 
 Property managers currently dig through hundreds of leases, HVAC reports, 
@@ -62,9 +108,9 @@ Answer + Source Citation
 | LLM | Llama 3.3 70B (Groq for dev, GCP Vertex AI for prod) |
 | Embeddings | OpenAI text-embedding-3-small |
 | Vector Database | Supabase + pgvector |
-| Prototype UI | Streamlit |
-| Production UI | React |
-| Deployment | Docker → GCP / On-Premise |
+| Frontend | Next.js + React |
+| Backend | FastAPI |
+| Deployment | Frontend: Vercel; backend: Docker container on GCP Cloud Run |
 
 ---
 
@@ -72,7 +118,7 @@ Answer + Source Citation
 ```
 crestmind-ai/
 ├── api.py                  ← FastAPI backend (RAG, documents, HITL feedback)
-├── app.py                  ← Streamlit prototype
+├── app.py                  ← opens the current hosted frontend
 ├── crestmind-frontend/     ← Next.js property-manager application
 ├── ingest/
 │   ├── loader.py           ← PDF/DOCX → raw text
@@ -86,7 +132,7 @@ crestmind-ai/
 │   ├── audit_logs.sql      ← HITL feedback/audit migration
 │   └── client.py           ← Supabase connection
 ├── ui/
-│   └── components.py       ← UI components
+│   └── components.py       ← unused legacy placeholder
 ├── data/
 │   └── samples/            ← test documents (gitignored)
 ├── .env.example            ← environment variables template
@@ -132,7 +178,7 @@ the model or silently change future answers.
 |---|---|
 | `main` | Final stable code only |
 | `develop` | Team integration branch |
-| `sample` | Streamlit prototype + RAG testing |
+| `sample` | Historical prototype / RAG experiments; use `main` for the current app |
 
 ---
 

@@ -10,7 +10,25 @@ This repository is linked to a [v0](https://v0.app) project. You can continue de
 
 ## Getting Started
 
-First, run the development server:
+To use the hosted application, open
+[CrestMind AI](https://v0-crestmind-frontend.vercel.app/).
+The former Streamlit UI has been removed from the main branch.
+
+For local development, run these commands from the combined repository root:
+
+```powershell
+cd crestmind-frontend
+npm install
+npm run dev
+```
+
+If your terminal is already inside `crestmind-frontend`, skip the `cd` step.
+The frontend defaults to the deployed GCP API. To use a local backend, set
+`NEXT_PUBLIC_API_URL=http://localhost:8000` in `.env.local` and restart the dev
+server. Do not place backend secrets in frontend environment variables.
+
+Alternatively, after installing dependencies, run the development server with
+your preferred package manager:
 
 ```bash
 npm run dev
