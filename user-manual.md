@@ -8,8 +8,6 @@
 **Prepared for:** Woodcrest Capital property managers  
 **Team Members:** Sushil Dahal, Satish Wagle, Saurav Pandey, Smarika Koirala, and Yubraj Chaulagain
 
-> Preparation note: The written instructions are complete. Add the six real application screenshots referenced below before submission, then remove this preparation note. The companion `screenshot-guide.md` explains exactly what to capture.
-
 ---
 
 ## 1. Introduction
