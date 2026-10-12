@@ -14,7 +14,7 @@
 
 CrestMind AI helps Woodcrest Capital property managers find information in leases, amendments, invoices, and other property documents by asking questions in everyday language. It shows supporting document passages so users can check where an answer came from. Users can also verify an answer or flag an error for human review, helping the team identify information that needs attention.
 
-This manual explains the hosted capstone application. Before using an answer for a financial, legal, or tenant decision, compare it with the cited document and any relevant amendments.
+This manual explains the hosted capstone application; before using an answer for a financial, legal, or tenant decision, compare it with the cited document and any relevant amendments.
 
 ---
 
