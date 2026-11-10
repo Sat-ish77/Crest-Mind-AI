@@ -9,6 +9,36 @@ export const api = axios.create({
   },
 })
 
+// ── Backend auth ──
+// The Next.js server (app/api/auth/session) hands out 15-minute tokens
+// signed with the backend's secret. The browser sends them straight to the
+// FastAPI backend, so uploads are not limited by Vercel's request-size cap
+// and the secret itself never reaches the browser.
+let cachedToken: { token: string; expiresAt: number } | null = null
+
+export const clearApiToken = () => {
+  cachedToken = null
+}
+
+async function getApiToken(): Promise<string | null> {
+  const now = Math.floor(Date.now() / 1000)
+  if (cachedToken && cachedToken.expiresAt - 60 > now) return cachedToken.token
+  const res = await fetch('/api/auth/session', { cache: 'no-store' })
+  if (!res.ok) {
+    cachedToken = null
+    return null
+  }
+  const data = await res.json()
+  cachedToken = data.apiToken ? { token: data.apiToken, expiresAt: data.expiresAt } : null
+  return cachedToken?.token ?? null
+}
+
+api.interceptors.request.use(async (config) => {
+  const token = await getApiToken()
+  if (token) config.headers.set('Authorization', `Bearer ${token}`)
+  return config
+})
+
 // Types
 export interface Source {
   doc_name: string

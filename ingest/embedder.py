@@ -119,6 +119,11 @@ def embed_and_store(chunks: list[dict]) -> int:
                 "metadata": chunk.get("metadata", {}),
             }
 
+            # Link the chunk to its property so property-scoped search
+            # (match_documents.filter_property_id) can find it.
+            if chunk.get("property_id"):
+                row["property_id"] = chunk["property_id"]
+
             try:
                 supabase.table("documents").insert(row).execute()
                 stored += 1

@@ -82,6 +82,23 @@ landlord expense to accommodate another tenant
 - OEA: Operating and Easement Agreement with major tenants\
 """
 
+# The refusal sentence SYSTEM_PROMPT rule 3 tells the model to use. When the
+# model says it, the answer was NOT found — even though retrieval returned
+# chunks. Previously such answers were reported as found_in_documents=True
+# with "medium" confidence (e.g. "What is the capital of France?").
+_REFUSAL_MARKERS = (
+    "could not find this specific information",
+    "not available in the provided documents",
+)
+
+
+def _is_refusal(answer_text: str) -> bool:
+    """True when the whole answer is the refusal, not a partial answer that
+    says one sub-question was missing (those keep their sources)."""
+    text = (answer_text or "").strip().lower()
+    return len(text) < 300 and any(marker in text for marker in _REFUSAL_MARKERS)
+
+
 # Response returned when the question is out of scope
 _OUT_OF_SCOPE_RESPONSE = {
     "answer": "This information is not available in the provided documents.",
@@ -152,7 +169,7 @@ def _call_llm(user_message: str) -> str:
         temperature=0.0,
         max_tokens=2048,
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content or ""
 
 
 def generate_answer(query: str, retrieval_result: dict) -> dict:
@@ -191,6 +208,14 @@ def generate_answer(query: str, retrieval_result: dict) -> dict:
     except Exception as exc:
         return {
             "answer": f"Error generating answer: {exc}",
+            "found_in_documents": False,
+            "overall_confidence": "none",
+            "sources": [],
+        }
+
+    if _is_refusal(answer_text):
+        return {
+            "answer": answer_text,
             "found_in_documents": False,
             "overall_confidence": "none",
             "sources": [],

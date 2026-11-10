@@ -18,16 +18,26 @@ from pydantic import ValidationError
 # Keep this unit test focused on the API boundary. The ingestion/RAG modules
 # have their own heavy document and model dependencies, none of which should
 # be initialized just to test feedback validation and persistence.
-sys.modules.setdefault("db.client", SimpleNamespace(get_supabase=lambda: None))
-sys.modules.setdefault("dotenv", SimpleNamespace(load_dotenv=lambda: None))
-sys.modules.setdefault("ingest.loader", SimpleNamespace(load_document=lambda *_args, **_kwargs: []))
-sys.modules.setdefault("ingest.chunker", SimpleNamespace(chunk_document=lambda *_args, **_kwargs: []))
-sys.modules.setdefault("ingest.embedder", SimpleNamespace(embed_and_store=lambda *_args, **_kwargs: None))
-sys.modules.setdefault("rag.retriever", SimpleNamespace(retrieve=lambda *_args, **_kwargs: []))
-sys.modules.setdefault("rag.generator", SimpleNamespace(generate_answer=lambda *_args, **_kwargs: {}))
-sys.modules.setdefault("rag.agent", SimpleNamespace(run_agent=lambda *_args, **_kwargs: {}))
+_STUBS = {
+    "db.client": SimpleNamespace(get_supabase=lambda: None),
+    "dotenv": SimpleNamespace(load_dotenv=lambda: None),
+    "ingest.loader": SimpleNamespace(load_document=lambda *_args, **_kwargs: []),
+    "ingest.chunker": SimpleNamespace(chunk_document=lambda *_args, **_kwargs: []),
+    "ingest.embedder": SimpleNamespace(embed_and_store=lambda *_args, **_kwargs: None),
+    "rag.retriever": SimpleNamespace(retrieve=lambda *_args, **_kwargs: []),
+    "rag.generator": SimpleNamespace(generate_answer=lambda *_args, **_kwargs: {}),
+    "rag.agent": SimpleNamespace(run_agent=lambda *_args, **_kwargs: {}),
+    "rag.property_resolver": SimpleNamespace(
+        resolve_property=lambda *_args, **_kwargs: {}, HIGH_CONFIDENCE=0.75,
+    ),
+}
 
-import api
+# Stubs are visible only while api is imported, so other test modules in
+# the same run still import the real pipeline. If api was already imported
+# for real, its get_supabase is patched per test below, which is all these
+# tests touch.
+with patch.dict(sys.modules, {k: v for k, v in _STUBS.items() if k not in sys.modules}):
+    import api
 
 
 class FakeQuery:
