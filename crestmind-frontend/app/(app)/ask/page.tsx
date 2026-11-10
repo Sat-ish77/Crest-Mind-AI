@@ -49,17 +49,15 @@ const docTypes = [
   { value: 'work_order', label: 'Work Order' },
 ]
 
-function ConfidenceBadge({ confidence }: { confidence: 'high' | 'medium' | 'low' | string }) {
+function ConfidenceBadge({ confidence }: { confidence: string }) {
+  if (confidence !== 'high' && confidence !== 'medium' && confidence !== 'low') return null
+
   const config = {
     high:   { icon: CheckCircle,   label: 'High Confidence',   className: 'bg-success/10 border-success/30 text-success confidence-high' },
     medium: { icon: AlertCircle,   label: 'Medium Confidence', className: 'bg-warning/10 border-warning/30 text-warning confidence-medium' },
     low:    { icon: AlertTriangle, label: 'Low Confidence',    className: 'bg-destructive/10 border-destructive/30 text-destructive confidence-low' },
   }
-  const safeKey =
-    confidence === 'high' || confidence === 'medium' || confidence === 'low'
-      ? confidence
-      : 'medium'
-  const { icon: Icon, label, className } = config[safeKey]
+  const { icon: Icon, label, className } = config[confidence]
   return (
     <motion.div
       className={cn('inline-flex items-center gap-2 px-4 py-2 rounded-full border', className)}

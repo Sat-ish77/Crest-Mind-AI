@@ -21,7 +21,7 @@ export interface Source {
 export interface AskResponse {
   answer: string
   found_in_documents: boolean
-  overall_confidence: 'high' | 'medium' | 'low'
+  overall_confidence: 'high' | 'medium' | 'low' | 'none'
   sources: Source[]
   steps: string[]   // agent reasoning trace
 }
