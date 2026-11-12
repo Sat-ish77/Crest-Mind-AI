@@ -161,8 +161,11 @@ def analyze_query(state: AgentState) -> dict:
     ]
     is_cross = any(sig in query.lower() for sig in cross_property_signals)
 
-    # Infer doc category
-    category = state.get("filter_doc_type") or _infer_category(query)
+    # Infer doc category. This is a routing LABEL for the reasoning trace
+    # ("Tenants", "Insurance", ...). It is NOT a doc_type: stored chunks use
+    # lease / invoice / amendment ..., so passing it as filter_doc_type made
+    # the first search of almost every question return nothing.
+    category = _infer_category(query)
 
     return {
         "is_cross_property": is_cross,
@@ -192,14 +195,18 @@ def resolve_property_node(state: AgentState) -> dict:
         {
             "role": "system",
             "content": (
-                "Extract the property name or location from the user's query. "
-                "Return ONLY the property name/location as a short string. "
-                "If no specific property is mentioned, return 'NONE'."
+                "Extract the name or location of the real-estate PROPERTY "
+                "(shopping center, plaza, building, or city/state) from the "
+                "user's query. Tenant names (e.g. a store renting space), "
+                "vendor or contractor names, and document names are NOT "
+                "properties. Return ONLY the property name/location as a "
+                "short string. If no specific property is mentioned, "
+                "return 'NONE'."
             ),
         },
         {"role": "user", "content": state["query"]},
     ]
-    extracted_name = _llm_call(extraction_prompt, temperature=0.0).strip()
+    extracted_name = _llm_call(extraction_prompt, temperature=0.0).strip().strip("'\"")
 
     if extracted_name.upper() == "NONE" or not extracted_name:
         # No specific property → treat as cross-property
@@ -252,32 +259,34 @@ def resolve_property_node(state: AgentState) -> dict:
 def retrieve_documents(state: AgentState) -> dict:
     """
     Step 3: Search the vector database for relevant chunks.
-    Filters by property_id and doc_category when available.
+    Attempt 1 filters by the identified property; attempt 2 searches all.
     """
     attempts = state.get("retrieval_attempts", 0)
 
-    # Build filter — use property_id and category if available
     filter_doc_name = state.get("filter_doc_name")
-    filter_doc_type = state.get("doc_category") or state.get("filter_doc_type")
+    filter_doc_type = state.get("filter_doc_type")  # user-chosen only
 
-    # If we have a property_id, add it as a metadata filter
-    property_id = state.get("property_id")
+    # Attempt 1 is scoped to the identified property. Attempt 2 drops the
+    # property filter, so a question that names a property still gets an
+    # answer when none of its chunks are linked or the matches are weak.
+    property_id = state.get("property_id") if attempts == 0 else None
 
     category_label = state.get("doc_category") or "all categories"
     prop_label     = state.get("property_name") or "all properties"
 
     step_msg = f"🗄️ Searching {category_label} documents for {prop_label}"
     if attempts > 0:
-        step_msg = f"🔄 Re-searching with broader scope (attempt {attempts + 1})"
+        step_msg = (
+            f"🔄 Nothing strong linked to {prop_label} — "
+            f"searching all documents (attempt {attempts + 1})"
+        )
 
-    # Call existing retriever
-    # On retry (attempts > 0), broaden: drop category filter
     retrieval_result = retrieve(
         query=state["query"],
-        filter_doc_type=filter_doc_type if attempts == 0 else None,
+        filter_doc_type=filter_doc_type,
         filter_doc_name=filter_doc_name,
         top_k=state.get("top_k", 5),
-        property_id=property_id,  # new filter — add to retriever.py
+        property_id=property_id,
     )
 
     chunks = retrieval_result.get("chunks", [])
@@ -297,27 +306,23 @@ def evaluate_retrieval(state: AgentState) -> Literal["generate", "retry", "not_f
     chunks   = state.get("chunks", [])
     attempts = state.get("retrieval_attempts", 0)
 
-    # No chunks at all
-    if not chunks:
-        if attempts < 2:
-            return "retry"
-        return "not_found"
+    # The only broader search available is dropping the property filter,
+    # which applies only to attempt 1 of a property-scoped question.
+    can_broaden = attempts < 2 and bool(state.get("property_id"))
 
-    # Check if chunks have reasonable confidence
-    high_or_medium = [
+    if not chunks:
+        return "retry" if can_broaden else "not_found"
+
+    strong = [
         c for c in chunks
         if c.get("confidence") in ("high", "medium")
     ]
-
-    if high_or_medium:
+    if strong or not can_broaden:
+        # Low-confidence chunks still go to the LLM, which is instructed to
+        # refuse when the answer is not in them.
         return "generate"
 
-    # Low confidence chunks + we haven't retried yet
-    if attempts < 2:
-        return "retry"
-
-    # Low confidence but we've tried twice — generate anyway with warning
-    return "generate"
+    return "retry"
 
 
 # ── Node: Generate Answer ─────────────────────────────────────────────
@@ -357,11 +362,12 @@ def generate_answer_node(state: AgentState) -> dict:
 # ── Node: Not Found ───────────────────────────────────────────────────
 def not_found_node(state: AgentState) -> dict:
     """Return a clean 'not found' response."""
-    prop = state.get("property_name", "the specified property")
+    prop = state.get("property_name")
+    about = f" about {prop}" if prop else ""
     return {
         "answer": (
-            f"I could not find relevant documents to answer your question "
-            f"about {prop}. This may be because:\n"
+            f"I could not find relevant documents to answer your question"
+            f"{about}. This may be because:\n"
             "- The documents haven't been ingested yet\n"
             "- The question refers to information not in the current knowledge base\n\n"
             "Please try rephrasing your question or contact your document administrator."

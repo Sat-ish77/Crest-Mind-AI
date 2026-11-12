@@ -21,10 +21,24 @@ load_dotenv()
 # ── Configuration ────────────────────────────────────────────
 EMBEDDING_MODEL = "text-embedding-3-small"  # must match ingest model
 
-# RRF scores range from ~0.012 to ~0.033 (max = 1/61 + 1/61).
-# 0.01 catches any chunk that ranked in either vector or keyword search.
-# Quality is controlled by ranking, not by this threshold.
-SIMILARITY_THRESHOLD = 0.01
+# match_documents returns Reciprocal Rank Fusion scores:
+#     score = 1/(60 + vector_rank) + 1/(60 + keyword_rank)
+# A chunk found by only ONE of the two searches scores at most 1/61 ≈ 0.0164;
+# a chunk ranked in the top ~60 of BOTH searches always scores above it.
+#
+# The old bands (medium >= 0.015) put every vector-only hit — including the
+# top hit for "What is the capital of France?" — at "medium" or better, so
+# confidence said nothing about relevance. The bands below are anchored on
+# that single-list ceiling: only chunks corroborated by keyword AND vector
+# search can be medium or high.
+RRF_K = 60
+SINGLE_LIST_MAX = 1 / (RRF_K + 1)          # ≈ 0.0164
+HIGH_CONFIDENCE_SCORE = 2 / (RRF_K + 5)    # ≈ 0.0308: top-5 in both lists
+
+# A row only exists if one of the searches found it, so every returned row
+# clears this; out-of-scope is decided by "no rows" plus the generator
+# detecting the LLM's own "could not find" refusal.
+SIMILARITY_THRESHOLD = 0.0
 
 _openai_client: OpenAI | None = None
 
@@ -55,9 +69,9 @@ def _embed_query(query: str) -> list[float]:
 
 def _confidence_level(similarity: float) -> str:
     """Map an RRF score to a human-readable confidence level."""
-    if similarity >= 0.025:
+    if similarity >= HIGH_CONFIDENCE_SCORE:
         return "high"
-    if similarity >= 0.015:
+    if similarity > SINGLE_LIST_MAX:
         return "medium"
     return "low"
 
@@ -112,7 +126,7 @@ def retrieve(
         "match_count":        top_k * 3,
         "filter_doc_type":    filter_doc_type,
         "filter_doc_name":    filter_doc_name,
-        "filter_property_id": property_id,   # new — agent passes this
+        "filter_property_id": property_id,
     }
 
     try:
@@ -125,7 +139,14 @@ def retrieve(
             "message": f"Database search failed: {exc}",
         }
 
-    rows = result.data or []
+    # Over-fetch (top_k * 3) so the fusion has candidates to rank, then keep
+    # only the top_k the caller asked for. Previously all 15 rows went to
+    # the LLM and the UI even though top_k defaults to 5.
+    rows = sorted(
+        result.data or [],
+        key=lambda r: r.get("similarity", 0) or 0,
+        reverse=True,
+    )[:top_k]
 
     chunks = []
     for row in rows:
@@ -134,7 +155,7 @@ def retrieve(
         chunks.append(row)
 
     if not chunks or all(
-        c.get("similarity", 0) < SIMILARITY_THRESHOLD for c in chunks
+        (c.get("similarity", 0) or 0) <= SIMILARITY_THRESHOLD for c in chunks
     ):
         return {
             "chunks": [],

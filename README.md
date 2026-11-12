@@ -28,8 +28,11 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Unless `NEXT_PUBLIC_API_URL` is overridden,
-this frontend connects to the existing GCP backend. Vercel and Cloud Run are
+Copy `crestmind-frontend/.env.example` to `crestmind-frontend/.env.local`
+and fill in the sign-in password and secrets (see
+[Authentication](#-authentication)). Open http://localhost:3000. Unless
+`NEXT_PUBLIC_API_URL` is overridden, this frontend connects to the existing
+GCP backend. Vercel and Cloud Run are
 hosting services; cloning the repository does not start either service locally.
 
 ### Develop the backend locally (optional)
@@ -47,7 +50,20 @@ python -m uvicorn api:app --reload --host 127.0.0.1 --port 8000
 To use that local backend, set `NEXT_PUBLIC_API_URL=http://localhost:8000`
 in `crestmind-frontend/.env.local` and restart the Next.js development server.
 Allow `http://localhost:3000` in the backend's `CORS_ORIGINS` setting.
-Keep all secret API keys on the backend; only the API URL belongs in the frontend.
+Keep all secret API keys on the backend; only the API URL belongs in the
+frontend's public (`NEXT_PUBLIC_`) settings.
+
+### Database setup
+
+Run these in the Supabase SQL editor, in order, on a new project:
+
+1. `db/schema.sql` — `properties` and `documents` tables
+2. `db/match_documents.sql` — hybrid (vector + keyword) search function
+3. `db/audit_logs.sql` — feedback audit trail
+
+For an existing database, run `db/migrations/001_property_link.sql`, then
+read the header of `db/match_documents.sql` before running it (it replaces
+the search function).
 
 See [the User Manual](user-manual.md) for property-manager instructions.
 
@@ -128,13 +144,18 @@ crestmind-ai/
 │   ├── retriever.py        ← similarity search
 │   └── generator.py        ← LLM call + citations
 ├── db/
-│   ├── schema.sql          ← Supabase table setup
+│   ├── schema.sql          ← properties + documents tables
+│   ├── match_documents.sql ← hybrid search RPC
 │   ├── audit_logs.sql      ← HITL feedback/audit migration
+│   ├── migrations/         ← changes for existing databases
 │   └── client.py           ← Supabase connection
 ├── ui/
 │   └── components.py       ← unused legacy placeholder
+├── scripts/
+│   ├── e2e_local/          ← end-to-end check on local Postgres, fictional docs
+│   └── reclassify_doc_types.py ← fix doc_type on already-ingested rows
 ├── data/
-│   └── samples/            ← test documents (gitignored)
+│   └── samples/            ← local test documents (gitignored, never commit)
 ├── .env.example            ← environment variables template
 └── requirements.txt
 ```
@@ -149,7 +170,37 @@ SUPABASE_URL=          ← your Supabase project URL
 SUPABASE_KEY=          ← backend-only Supabase service-role key
 CORS_ORIGINS=          ← exact frontend URL(s), comma-separated in production
 GCP_PROJECT_ID=        ← for Vertex AI (prod)
+API_AUTH_TOKEN=        ← required in production; see Authentication
 ```
+
+---
+
+## 🔒 Authentication
+
+- **Sign-in** is checked on the Next.js server (`app/api/auth/*`) against
+  `CRESTMIND_LOGIN_PASSWORD`. The session is an httpOnly cookie signed with
+  `CRESTMIND_SESSION_SECRET`.
+- **API calls** carry a 15-minute token that the Next.js server signs with
+  `CRESTMIND_API_AUTH_TOKEN`. The browser sends it straight to Cloud Run,
+  which verifies it with the same value in `API_AUTH_TOKEN`. The secret
+  never reaches the browser, and uploads are not limited by Vercel's
+  request-size cap.
+- Only `GET /` (health check) is public when `API_AUTH_TOKEN` is set. If it
+  is unset, the API logs a warning and accepts every request — local
+  development only.
+
+Deploy order: set the three `CRESTMIND_*` variables in Vercel and redeploy
+the frontend, then set `API_AUTH_TOKEN` on Cloud Run.
+
+## ✅ Tests
+
+```powershell
+python -m unittest discover -s tests -t .
+```
+
+`scripts/e2e_local/run_e2e.py` runs the whole backend (ingest → agent →
+answer → feedback → delete) against a local Postgres + pgvector with
+fictional documents and stubbed models; see the file header for setup.
 
 ---
 

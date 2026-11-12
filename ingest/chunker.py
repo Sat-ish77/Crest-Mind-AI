@@ -75,8 +75,11 @@ _SENTENCE_SPLIT = re.compile(
 )
 
 # ── Property-name extraction ────────────────────────────────
+# Only the label is case-insensitive. The captured name must start with a
+# capital letter and stays on one line — a global (?i) let "[A-Z]" match
+# lowercase, so prose like "property taxes and insurance" became a name.
 _property_pattern = re.compile(
-    r"(?i)(?:property|shopping center|center name|project)[:\s]+([A-Z][\w\s\-&']{3,50})",
+    r"(?i:property|shopping center|center name|project)[ \t]*:?[ \t]+([A-Z][\w \-&']{3,50})",
 )
 
 

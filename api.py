@@ -10,11 +10,17 @@ ON-PREMISE SWAP:
   All environment variables stay the same as .env
 """
 
+import base64
+import hashlib
+import hmac
 import os
+import time
 import tempfile
 import logging
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, status
+from fastapi import (
+    Depends, FastAPI, UploadFile, File, Form, HTTPException, Query, Request, status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
@@ -27,6 +33,7 @@ from ingest.embedder import embed_and_store
 from rag.retriever import retrieve
 from rag.generator import generate_answer
 from rag.agent import run_agent
+from rag.property_resolver import resolve_property, HIGH_CONFIDENCE
 
 load_dotenv()
 
@@ -36,6 +43,75 @@ _cors_setting = os.getenv("CORS_ORIGINS", "*")
 ALLOWED_ORIGINS = [origin.strip() for origin in _cors_setting.split(",") if origin.strip()]
 
 # ─────────────────────────────────────────────────────────────────────────────
+# AUTH
+# ─────────────────────────────────────────────────────────────────────────────
+# When API_AUTH_TOKEN is set, every endpoint except the GET / health check
+# requires  Authorization: Bearer <token>  where <token> is either:
+#
+#   * a short-lived user token minted by the Next.js server after a real
+#     password check:  v1.<unix_expiry>.<base64url username>.<hex signature>
+#     signature = HMAC-SHA256(API_AUTH_TOKEN, "v1.<expiry>.<username_b64>")
+#     (crestmind-frontend/lib/server-auth.ts mints these), or
+#   * API_AUTH_TOKEN itself, for server-to-server scripts.
+#
+# The secret never reaches the browser. Previously the only "login" was a
+# password compared in browser JavaScript, and the API itself accepted any
+# caller — anyone could call /ingest or DELETE /documents on production.
+#
+# Unset = open API (local development only). A warning is logged at startup.
+
+API_AUTH_TOKEN = os.getenv("API_AUTH_TOKEN", "")
+
+if not API_AUTH_TOKEN:
+    logger.warning(
+        "API_AUTH_TOKEN is not set: every endpoint is publicly callable. "
+        "Set it in any deployed environment."
+    )
+
+
+def verify_api_token(token: str, secret: str, now: Optional[float] = None) -> Optional[str]:
+    """Return the caller's username for a valid token, else None.
+
+    The static secret itself is accepted as the service account "service".
+    """
+    if not token or not secret:
+        return None
+    if hmac.compare_digest(token.encode(), secret.encode()):
+        return "service"
+    parts = token.split(".")
+    if len(parts) != 4 or parts[0] != "v1":
+        return None
+    _, expiry, username_b64, signature = parts
+    payload = f"v1.{expiry}.{username_b64}".encode()
+    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature.encode(), expected.encode()):
+        return None
+    try:
+        if int(expiry) < (now if now is not None else time.time()):
+            return None
+        padded = username_b64 + "=" * (-len(username_b64) % 4)
+        return base64.urlsafe_b64decode(padded).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return None
+
+
+def require_api_token(request: Request) -> None:
+    if not API_AUTH_TOKEN:
+        return
+    if request.method == "GET" and request.url.path == "/":
+        return  # unauthenticated health check for Cloud Run
+    if request.method == "OPTIONS":
+        return  # CORS preflight carries no credentials
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() != "bearer" or verify_api_token(token.strip(), API_AUTH_TOKEN) is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid API token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # APP INIT
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -43,6 +119,7 @@ app = FastAPI(
     title="CrestMind AI API",
     description="Property Document Intelligence for Woodcrest Capital",
     version="1.0.0",
+    dependencies=[Depends(require_api_token)],
 )
 
 # Local/demo deployments default to any origin. Production should set
@@ -133,6 +210,30 @@ def _model_to_dict(model: BaseModel) -> dict:
     if hasattr(model, "model_dump"):
         return model.model_dump()
     return model.dict()
+
+
+def _link_property(chunks: list[dict]) -> Optional[str]:
+    """Attach property_id to every chunk when the document's property name
+    resolves unambiguously to a row in `properties`.
+
+    Without this link, the agent's property-scoped search could never see
+    documents uploaded through /ingest. Resolution problems never block an
+    upload: the chunks are stored unlinked and remain searchable globally.
+    """
+    name = next((c.get("property_name") for c in chunks if c.get("property_name")), None)
+    if not name:
+        return None
+    try:
+        match = resolve_property(name)
+    except Exception:
+        logger.exception("Property resolution failed during ingest")
+        return None
+    if match["status"] != "found" or match["confidence"] < HIGH_CONFIDENCE:
+        return None
+    property_id = str(match["property"]["id"])
+    for chunk in chunks:
+        chunk["property_id"] = property_id
+    return property_id
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -237,6 +338,8 @@ def ingest(
             for chunk in chunks:
                 chunk["property_name"] = property_name.strip()
 
+        property_id = _link_property(chunks)
+
         # Embed and store
         stored = embed_and_store(chunks)
 
@@ -244,6 +347,7 @@ def ingest(
             "doc_name": file.filename,
             "chunks_stored": stored,
             "doc_type": doc["doc_type"],
+            "property_id": property_id,
         }
 
     except Exception as e:

@@ -16,9 +16,14 @@ from db.client import get_supabase
 
 
 # ── Confidence thresholds ──────────────────────────────────────────────
-HIGH_CONFIDENCE   = 0.75   # return directly
-MEDIUM_CONFIDENCE = 0.45   # return with warning
-LOW_CONFIDENCE    = 0.0    # ask for clarification
+# Measured against the live property list: unrelated names ("Ollie's",
+# "TMT", "Sunset Mall") score 0.30–0.50 against random properties, while
+# real references ("Akers", "Maple Ridge", "Morton IL") score >= 0.85.
+# The old 0.45 medium band sat inside the noise, so tenant and vendor
+# names came back as "ambiguous" with three unrelated properties.
+HIGH_CONFIDENCE   = 0.75   # return directly (unless a runner-up is as good)
+MEDIUM_CONFIDENCE = 0.65   # return with warning
+AMBIGUITY_MARGIN  = 0.10   # runner-up this close to the winner -> ask user
 
 
 def _normalize(text: str) -> str:
@@ -111,6 +116,27 @@ def resolve_property(query: str) -> dict:
     top_prop   = scored[0][0]
     top_3      = scored[:3]
 
+    close_matches = [
+        p for p, score in top_3
+        if score >= MEDIUM_CONFIDENCE and score >= top_score - AMBIGUITY_MARGIN
+    ]
+
+    # ── Ambiguous: two or more properties match about equally well ──
+    # Checked in the high band too: "Park Place" scores 0.95 against
+    # "Parkplace Plaza" and 0.85 against "Park Place Center"; silently
+    # picking one answers questions about the wrong property.
+    if top_score >= MEDIUM_CONFIDENCE and len(close_matches) > 1:
+        return {
+            "status": "ambiguous",
+            "property": None,
+            "candidates": close_matches,
+            "confidence": top_score,
+            "message": (
+                f"Found multiple possible matches for '{query}'. "
+                "Please clarify which property you mean."
+            ),
+        }
+
     # ── High confidence: clear winner ──
     if top_score >= HIGH_CONFIDENCE:
         return {
@@ -121,22 +147,8 @@ def resolve_property(query: str) -> dict:
             "message": f"Matched to: {top_prop['name']} ({top_prop.get('state', '')})",
         }
 
-    # ── Ambiguous: close scores between top matches ──
+    # ── Medium confidence: single best match, with a warning ──
     if top_score >= MEDIUM_CONFIDENCE:
-        second_score = scored[1][1] if len(scored) > 1 else 0.0
-        # If top two are within 0.1 of each other → ambiguous
-        if second_score >= top_score - 0.10:
-            return {
-                "status": "ambiguous",
-                "property": None,
-                "candidates": [p for p, _ in top_3],
-                "confidence": top_score,
-                "message": (
-                    f"Found multiple possible matches for '{query}'. "
-                    "Please clarify which property you mean."
-                ),
-            }
-        # Otherwise return top with medium confidence warning
         return {
             "status": "found",
             "property": top_prop,
@@ -152,7 +164,7 @@ def resolve_property(query: str) -> dict:
     return {
         "status": "not_found",
         "property": None,
-        "candidates": [p for p, _ in top_3 if _ > 0.2],
+        "candidates": [p for p, score in top_3 if score > 0.2],
         "confidence": top_score,
         "message": (
             f"Could not identify a property matching '{query}'. "

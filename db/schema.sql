@@ -3,7 +3,8 @@
 -- Group 13, UNT Capstone Spring 2026
 --
 -- Run this SQL in the Supabase SQL Editor to set up the
--- documents table and similarity-search RPC function.
+-- properties and documents tables. The search RPC lives in
+-- db/match_documents.sql (run it next).
 --
 -- ON-PREMISE SWAP: This same SQL works on any PostgreSQL
 -- instance with the pgvector extension installed.
@@ -41,6 +42,23 @@ CREATE EXTENSION IF NOT EXISTS vector;
 --                 total_monthly_rent, vacancy_rate
 -- -------------------------------------------------------------
 
+-- -------------------------------------------------------------
+-- properties — master list the agent resolves names against
+-- (rag/property_resolver.py). Columns match what the resolver reads.
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS properties (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name         TEXT NOT NULL,
+    entity_name  TEXT,
+    city         TEXT,
+    state        TEXT,
+    status       TEXT NOT NULL DEFAULT 'active'
+                 CHECK (status IN ('active', 'sold', 'historical', 'held')),
+    sold_date    DATE,
+    is_external  BOOLEAN NOT NULL DEFAULT false,
+    created_at   TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS documents (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     content        TEXT NOT NULL,
@@ -50,9 +68,17 @@ CREATE TABLE IF NOT EXISTS documents (
     section        TEXT,
     page_number    INT,
     property_name  TEXT,
+    -- Set by /ingest when property_name resolves to a properties row.
+    -- NULL chunks are still found: the agent retries without the filter.
+    property_id    UUID REFERENCES properties(id) ON DELETE SET NULL,
     metadata       JSONB DEFAULT '{}'::jsonb,
     created_at     TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS documents_property_id_idx ON documents (property_id);
+CREATE INDEX IF NOT EXISTS documents_doc_name_idx    ON documents (doc_name);
+CREATE INDEX IF NOT EXISTS documents_content_fts_idx
+    ON documents USING gin (to_tsvector('english', content));
 
 -- IMPORTANT: Do NOT create an IVFFlat or HNSW index yet.
 -- With fewer than 10,000 rows the sequential scan is faster
@@ -67,58 +93,5 @@ CREATE TABLE IF NOT EXISTS documents (
 --     USING hnsw (embedding vector_cosine_ops);
 
 -- -------------------------------------------------------------
--- match_documents  — Supabase RPC for similarity search
---
--- Parameters:
---   query_embedding  — the 1536-dim vector of the user query
---   match_count      — how many results to return
---   filter_doc_type  — optional: restrict to a specific doc_type
---                      (NULL = search all document types)
---   filter_doc_name  — optional: restrict to a specific document
---                      by filename (NULL = search all documents)
---
--- Returns rows ordered by cosine similarity (highest first).
--- Cosine similarity = 1 - cosine distance; pgvector's <=>
--- operator returns cosine distance, so we subtract from 1.
+-- Next: run db/match_documents.sql (search RPC), then db/audit_logs.sql.
 -- -------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION match_documents(
-    query_embedding  VECTOR(1536),
-    match_count      INT DEFAULT 5,
-    filter_doc_type  TEXT DEFAULT NULL,
-    filter_doc_name  TEXT DEFAULT NULL
-)
-RETURNS TABLE (
-    id             UUID,
-    content        TEXT,
-    doc_name       TEXT,
-    doc_type       TEXT,
-    section        TEXT,
-    page_number    INT,
-    property_name  TEXT,
-    metadata       JSONB,
-    similarity     FLOAT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT
-        d.id,
-        d.content,
-        d.doc_name,
-        d.doc_type,
-        d.section,
-        d.page_number,
-        d.property_name,
-        d.metadata,
-        1 - (d.embedding <=> query_embedding) AS similarity
-    FROM documents d
-    WHERE
-        d.embedding IS NOT NULL
-        AND (filter_doc_type IS NULL OR d.doc_type = filter_doc_type)
-        AND (filter_doc_name IS NULL OR d.doc_name = filter_doc_name)
-    ORDER BY d.embedding <=> query_embedding
-    LIMIT match_count;
-END;
-$$;

@@ -12,6 +12,7 @@ ON-PREMISE SWAP:
 """
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -20,37 +21,52 @@ from docx import Document
 
 
 # ── Document-type detection rules ────────────────────────────
-# Each rule is (keywords_to_match, detected_type).
-# Checked in order: first match wins.  filename is checked
-# first, then file content — so a file named "invoice.pdf"
-# is classified even if the word never appears inside.
+# Each rule is (regex_patterns, detected_type). Patterns use word
+# boundaries so short tokens cannot match inside other words — the old
+# substring rule "wo" matched "WOodcrest", "ductWOrk", "tWO" and
+# "netWOrk", filing most leases and invoices as work orders.
+#
+# The filename is checked against EVERY rule before the content is
+# checked at all: a file named "... Lease, 2010.docx" is a lease even if
+# its first page mentions a work order.
 
 _DOC_TYPE_RULES: list[tuple[list[str], str]] = [
-    (["rent roll"],                          "rent_roll"),
-    (["work order", "wo"],                   "work_order"),
-    (["amendment", "amend"],                 "amendment"),
-    (["lease", "agreement"],                 "lease"),
-    (["invoice"],                            "invoice"),
-    (["inspection", "hvac inspection"],      "inspection"),
-    (["quote", "proposal"],                  "quote"),
+    ([r"\brent\s*roll\b"],                                  "rent_roll"),
+    ([r"\bwork\s*orders?\b", r"\bw/?o\s*#?\s*\d+"],          "work_order"),
+    ([r"\bamend(?:ment|ed)?\b"],                            "amendment"),
+    ([r"\blease\b"],                                       "lease"),
+    ([r"\binvoice\b"],                                     "invoice"),
+    ([r"\binspection\b"],                                  "inspection"),
+    ([r"\bquote\b", r"\bproposal\b"],                       "quote"),
+]
+
+_COMPILED_RULES = [
+    ([re.compile(p, re.IGNORECASE) for p in patterns], doc_type)
+    for patterns, doc_type in _DOC_TYPE_RULES
 ]
 
 
+def _match_rules(text: str) -> str | None:
+    for patterns, doc_type in _COMPILED_RULES:
+        if any(p.search(text) for p in patterns):
+            return doc_type
+    return None
+
+
 def _detect_doc_type(filename: str, text: str) -> str:
-    """Classify a document by scanning filename then content.
+    """Classify a document by its filename first, then its content.
 
     Returns a doc_type string (e.g. 'lease', 'invoice').
     Falls back to 'unknown' if no rule matches.
     """
-    filename_lower = filename.lower()
-    text_lower = text[:3000].lower()  # first 3 000 chars is enough
-
-    for keywords, doc_type in _DOC_TYPE_RULES:
-        for kw in keywords:
-            if kw in filename_lower or kw in text_lower:
-                return doc_type
-
-    return "unknown"
+    stem = os.path.splitext(filename)[0]
+    # Treat separators in filenames as spaces so "HVAC_Inspection" matches.
+    stem = re.sub(r"[_\-.]+", " ", stem)
+    return (
+        _match_rules(stem)
+        or _match_rules(text[:3000])  # first 3 000 chars is enough
+        or "unknown"
+    )
 
 
 # ── PDF loader (PyMuPDF / fitz) ──────────────────────────────
@@ -98,7 +114,11 @@ def _load_docx(filepath: str) -> dict:
             if row_text.replace("|", "").strip():
                 parts.append(row_text)
 
-    full_text = "\n".join(parts)
+    # Blank-line separators: chunker.chunk_document() splits paragraphs on
+    # "\n\n". A single "\n" made every DOCX one giant paragraph, so section
+    # headings were never detected and whole leases collapsed into one
+    # section label.
+    full_text = "\n\n".join(parts)
     return {
         "text": full_text,
         "page_count": 1,
